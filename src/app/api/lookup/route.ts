@@ -92,7 +92,7 @@ const callDeepSeek = (query: string, apiKey: string) =>
   callOpenAICompat(query, apiKey, "https://api.deepseek.com/v1", "deepseek-chat", "DeepSeek");
 
 const callOpenRouter = (query: string, apiKey: string) =>
-  callOpenAICompat(query, apiKey, "https://openrouter.ai/api/v1", "google/gemini-2.5-flash", "OpenRouter");
+  callOpenAICompat(query, apiKey, "https://openrouter.ai/api/v1", "meta-llama/llama-3.3-70b-instruct:free", "OpenRouter");
 
 async function callGemini(query: string, apiKey: string): Promise<string> {
   const genAI = new GoogleGenerativeAI(apiKey);

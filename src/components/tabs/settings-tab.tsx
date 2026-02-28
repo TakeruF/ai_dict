@@ -55,11 +55,11 @@ const PROVIDER_INFO: Record<
     keyUrl: "platform.deepseek.com",
   },
   openrouter: {
-    model: "google/gemini-2.5-flash",
-    input: "モデルにより異なる",
-    output: "モデルにより異なる",
-    perSearch: "モデルにより異なる",
-    freeTier: "一部モデルは無料",
+    model: "meta-llama/llama-3.3-70b-instruct:free",
+    input: "無料",
+    output: "無料",
+    perSearch: "無料",
+    freeTier: "無料（レート制限あり）",
     keyUrl: "openrouter.ai/keys",
   },
 };
