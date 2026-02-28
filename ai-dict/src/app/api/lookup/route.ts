@@ -109,30 +109,37 @@ async function callGemini(query: string, apiKey: string): Promise<string> {
 // ── Structured error extraction ────────────────────────────────────
 function extractErrorInfo(err: unknown): { status: number; code: string; message: string } {
   const msg = err instanceof Error ? err.message : String(err);
+  // Anthropic SDK (and other typed SDKs) set a numeric .status on their errors
+  const httpStatus = (err as { status?: number }).status;
 
-  // Gemini 429
-  if (msg.includes("429") || msg.includes("Too Many Requests") || msg.includes("quota")) {
-    return {
-      status: 429,
-      code: "rate_limited",
-      message:
-        "APIのレート制限またはクォータに達しました。しばらく待ってから再試行してください。Geminiの無料枠を使い切った場合はGoogle AI Studioで課金を有効にしてください。",
-    };
+  // ── Insufficient balance / billing (402) ─────────────────────────
+  if (
+    httpStatus === 402 ||
+    /insufficient.*(balance|credit|quota)/i.test(msg) ||
+    /credit.*(balance|low|run)/i.test(msg) ||
+    msg.toLowerCase().includes("billing") ||
+    msg.toLowerCase().includes("insufficient balance")
+  ) {
+    return { status: 402, code: "insufficient_balance", message: msg };
   }
 
-  // Auth errors
+  // ── Rate limited / quota exceeded (429) ──────────────────────────
   if (
-    msg.includes("401") ||
-    msg.includes("Unauthorized") ||
-    msg.includes("invalid x-api-key") ||
-    msg.includes("API_KEY_INVALID") ||
-    msg.includes("invalid_api_key")
+    httpStatus === 429 ||
+    msg.includes("429") ||
+    msg.includes("Too Many Requests") ||
+    /quota|rate.?limit/i.test(msg)
   ) {
-    return {
-      status: 401,
-      code: "invalid_api_key",
-      message: "APIキーが無効です。設定タブで正しいキーを入力してください。",
-    };
+    return { status: 429, code: "rate_limited", message: msg };
+  }
+
+  // ── Auth / invalid key (401) ─────────────────────────────────────
+  if (
+    httpStatus === 401 ||
+    msg.includes("401") ||
+    /unauthorized|invalid.*(api.?key|key|token)|api_key_invalid|authentication/i.test(msg)
+  ) {
+    return { status: 401, code: "invalid_api_key", message: msg };
   }
 
   return { status: 500, code: "server_error", message: msg };

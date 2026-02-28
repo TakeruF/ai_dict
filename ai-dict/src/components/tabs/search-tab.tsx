@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Search, X, Volume2, BookmarkPlus, Loader2, AlertCircle } from "lucide-react";
+import { Search, X, Loader2, AlertCircle, CreditCard } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -129,7 +129,7 @@ export function SearchTab({ onNavigate }: SearchTabProps) {
 
       {/* ── Error ─────────────────────────────────────── */}
       {isError && !isFetching && (
-        <ErrorCard error={error} onNavigate={onNavigate} />
+        <ErrorCard error={error} provider={settings.provider} onNavigate={onNavigate} />
       )}
 
       {/* ── Result ────────────────────────────────────── */}
@@ -194,11 +194,20 @@ function LoadingSkeleton() {
 
 type CodedError = Error & { code?: string };
 
+const BILLING_LINKS: Record<string, { label: string; url: string }> = {
+  anthropic: { label: "Anthropic 課金ページ", url: "https://console.anthropic.com/settings/billing" },
+  gemini:    { label: "Google AI Studio",      url: "https://aistudio.google.com/apikey" },
+  openai:    { label: "OpenAI 課金ページ",     url: "https://platform.openai.com/settings/organization/billing/overview" },
+  deepseek:  { label: "DeepSeek 課金ページ",   url: "https://platform.deepseek.com/usage" },
+};
+
 function ErrorCard({
   error,
+  provider,
   onNavigate,
 }: {
   error: Error;
+  provider: string;
   onNavigate: (tab: string) => void;
 }) {
   const code = (error as CodedError).code ?? error.message;
@@ -207,6 +216,7 @@ function ErrorCard({
   const isKeyMissing  = code === "missing_api_key";
   const isInvalidKey  = code === "invalid_api_key";
   const isRateLimited = code === "rate_limited";
+  const isNoBal       = code === "insufficient_balance";
 
   const title = isNotFound
     ? "単語が見つかりませんでした"
@@ -214,6 +224,8 @@ function ErrorCard({
     ? "APIキーに問題があります"
     : isRateLimited
     ? "レート制限 / クォータ超過"
+    : isNoBal
+    ? "残高不足（Insufficient Balance）"
     : "エラーが発生しました";
 
   const detail = isNotFound
@@ -223,28 +235,40 @@ function ErrorCard({
     : isInvalidKey
     ? "APIキーが無効です。設定タブで正しいキーを確認してください。"
     : isRateLimited
-    ? error.message
+    ? "リクエスト数が上限に達しました。しばらく待ってから再試行してください。"
+    : isNoBal
+    ? "APIアカウントのクレジット残高が不足しています。下のリンクから残高を追加してください。"
     : error.message;
 
+  const billingLink = BILLING_LINKS[provider];
   const showSettingsBtn = isKeyMissing || isInvalidKey;
+  const isBillingError  = isNoBal || isRateLimited;
 
   return (
-    <Card className="rounded-2xl border-destructive/30 bg-destructive/5">
+    <Card className={`rounded-2xl border ${isNoBal ? "border-amber-300/50 bg-amber-50/60 dark:bg-amber-900/10" : "border-destructive/30 bg-destructive/5"}`}>
       <CardContent className="p-6 flex gap-3 items-start">
-        <AlertCircle className="h-5 w-5 text-destructive mt-0.5 shrink-0" />
-        <div>
+        {isNoBal
+          ? <CreditCard className="h-5 w-5 text-amber-500 mt-0.5 shrink-0" />
+          : <AlertCircle className="h-5 w-5 text-destructive mt-0.5 shrink-0" />
+        }
+        <div className="flex-1 min-w-0">
           <p className="text-sm font-medium text-foreground">{title}</p>
           <p className="text-xs text-muted-foreground mt-1 leading-relaxed">{detail}</p>
-          {showSettingsBtn && (
-            <Button
-              size="sm"
-              variant="outline"
-              className="mt-3 text-xs"
-              onClick={() => onNavigate("settings")}
-            >
-              設定を開く
-            </Button>
-          )}
+          <div className="flex flex-wrap gap-2 mt-3">
+            {showSettingsBtn && (
+              <Button size="sm" variant="outline" className="text-xs" onClick={() => onNavigate("settings")}>
+                設定を開く
+              </Button>
+            )}
+            {isBillingError && billingLink && (
+              <Button size="sm" variant="outline" className="text-xs gap-1.5" asChild>
+                <a href={billingLink.url} target="_blank" rel="noopener noreferrer">
+                  <CreditCard className="h-3 w-3" />
+                  {billingLink.label}
+                </a>
+              </Button>
+            )}
+          </div>
         </div>
       </CardContent>
     </Card>
