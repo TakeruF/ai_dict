@@ -55,7 +55,7 @@ const PROVIDER_INFO: Record<
     keyUrl: "platform.deepseek.com",
   },
   openrouter: {
-    model: "qwen/qwen-2.5-72b-instruct:free",
+    model: "stepfun/step-3.5-flash:free",
     input: "無料",
     output: "無料",
     perSearch: "無料",

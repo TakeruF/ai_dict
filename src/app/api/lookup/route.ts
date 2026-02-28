@@ -105,7 +105,7 @@ const callOpenRouter = (query: string, apiKey: string) =>
   callOpenAICompat(
     query, apiKey,
     "https://openrouter.ai/api/v1",
-    "qwen/qwen-2.5-72b-instruct:free",
+    "stepfun/step-3.5-flash:free",
     "OpenRouter",
     false,
     { "HTTP-Referer": "https://ai-dict.vercel.app", "X-Title": "Chinese-Japanese AI Dictionary" },
