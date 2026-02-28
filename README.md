@@ -1,3 +1,11 @@
+# AI Dict — 中日 AI 辞書
+
+## ⚠️ Development Status
+
+- **Web (Next.js)**: Active development
+- **Android (Capacitor)**: Active development
+- **iOS (In Progress)**: Development in progress - Features and UI are subject to change
+
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
 ## Getting Started

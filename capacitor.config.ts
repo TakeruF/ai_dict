@@ -5,7 +5,17 @@ const config: CapacitorConfig = {
   appName: "AI Dict",
   webDir: "out",
   server: {
-    androidScheme: "https", // Use https origin so LLM APIs accept CORS
+    androidScheme: "https",
+    iosScheme: "capacitor",
+  },
+  ios: {
+    preferredContentMode: "mobile",
+    scheme: "capacitor",
+  },
+  plugins: {
+    SplashScreen: {
+      launchShowDuration: 0,
+    },
   },
 };
 

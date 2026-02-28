@@ -11,6 +11,8 @@ import { SettingsTab } from "@/components/tabs/settings-tab";
 import { NativeLanguage } from "@/types/dictionary";
 import { getSettings, saveSettings } from "@/lib/store";
 import { isCapacitor } from "@/hooks/useHaptics";
+import { useIsIOS } from "@/hooks/useIsIOS";
+import { useLiquidGlassNative } from "@/hooks/useLiquidGlassNative";
 
 // ── Tab definitions ─────────────────────────────────────────────────
 const TABS = [
@@ -60,6 +62,8 @@ export default function Home() {
   const [tabIndex, setTabIndex]       = useState(0);
   const [searchInput, setSearchInput] = useState("");
   const [activeQuery, setActiveQuery] = useState("");
+  const isIOS                         = useIsIOS();
+  const { syncTabToNative, triggerSearchOnNative } = useLiquidGlassNative();
 
   // Swipe gesture refs — avoid re-renders during drag
   const swipeRef    = useRef<HTMLDivElement>(null);
@@ -155,6 +159,43 @@ export default function Home() {
     };
   }, []); // empty deps — uses refs
 
+  // ── Native UI event listeners (iOS only) ────────────────────────
+  useEffect(() => {
+    if (!isIOS) return;
+
+    // Listen for native tab changes
+    const onNativeTabChange = (event: any) => {
+      const tabIndex = event.detail;
+      if (typeof tabIndex === "number") {
+        setTabIndex(tabIndex);
+      }
+    };
+
+    // Listen for native search
+    const onNativeSearch = (event: any) => {
+      const query = event.detail;
+      if (typeof query === "string" && query.trim()) {
+        setSearchInput(query);
+        setActiveQuery(query);
+        setTabIndex(SEARCH_IDX);
+      }
+    };
+
+    window.addEventListener("nativeTabChange", onNativeTabChange);
+    window.addEventListener("nativeSearch", onNativeSearch);
+
+    return () => {
+      window.removeEventListener("nativeTabChange", onNativeTabChange);
+      window.removeEventListener("nativeSearch", onNativeSearch);
+    };
+  }, [isIOS]);
+
+  // ── Sync tabIndex to native UI (iOS only) ───────────────────────
+  useEffect(() => {
+    if (!isIOS) return;
+    syncTabToNative(tabIndex);
+  }, [tabIndex, isIOS, syncTabToNative]);
+
   // ── Handlers ─────────────────────────────────────────────────────
   const handleLangSelect = (selected: NativeLanguage) => {
     saveSettings({ nativeLanguage: selected });
@@ -184,6 +225,39 @@ export default function Home() {
   const isEn     = lang === "en";
   const title    = isEn ? "Zh-En AI Dict" : "中日AI辞書";
   const isNative = isCapacitor(); // safe: mounted guard ensures client-side
+
+  // ── iOS Liquid Glass styles ────────────────────────────────────────
+  const headerClass = isNative && isIOS
+    ? "shrink-0 bg-white/10 dark:bg-black/10 backdrop-blur-lg border-b border-white/20 dark:border-white/10 flex items-end px-4 pb-3 z-40"
+    : "shrink-0 bg-background/90 backdrop-blur-sm border-b border-border/60 flex items-end px-4 pb-3 z-40";
+
+  const bottomBarClass = isNative && isIOS
+    ? "shrink-0 bg-white/10 dark:bg-black/10 backdrop-blur-lg border-t border-white/20 dark:border-white/10 z-50"
+    : "shrink-0 bg-background border-t border-border/60 z-50";
+
+  const searchBarBorderClass = isNative && isIOS
+    ? "h-14 flex items-center px-3 gap-2 border-b border-white/10 dark:border-white/5"
+    : "h-14 flex items-center px-3 gap-2 border-b border-border/40";
+
+  const searchInputClass = isNative && isIOS
+    ? "pl-9 pr-8 h-9 text-sm rounded-xl bg-white/20 dark:bg-white/10 border border-white/30 dark:border-white/20 backdrop-blur-md focus-visible:ring-1 focus-visible:ring-primary"
+    : "pl-9 pr-8 h-9 text-sm rounded-xl border-border/60 bg-muted/40 focus-visible:ring-1";
+
+  const searchButtonClass = isNative && isIOS
+    ? "shrink-0 h-9 px-4 rounded-xl bg-gradient-to-br from-primary to-primary/80 text-primary-foreground text-sm font-medium disabled:opacity-40 transition-all hover:shadow-lg active:scale-95"
+    : "shrink-0 h-9 px-4 rounded-xl bg-primary text-primary-foreground text-sm font-medium disabled:opacity-40 transition-opacity";
+
+  const tabNavClass = isNative && isIOS
+    ? "h-14 flex items-stretch border-t border-white/10 dark:border-white/5 backdrop-blur-sm"
+    : "h-14 flex items-stretch";
+
+  const tabButtonActiveClass = isNative && isIOS
+    ? "text-primary bg-white/10 dark:bg-white/5"
+    : "text-primary";
+
+  const tabButtonInactiveClass = isNative && isIOS
+    ? "text-muted-foreground hover:bg-white/5 dark:hover:bg-white/[3%]"
+    : "text-muted-foreground";
 
   // ── Desktop layout (web) ──────────────────────────────────────────
   if (!isNative) {
@@ -263,12 +337,23 @@ export default function Home() {
   // ── Mobile layout (Android / native) ─────────────────────────────
   return (
     // 100dvh = dynamic viewport (accounts for mobile browser chrome)
-    <div style={{ display: "flex", flexDirection: "column", height: "100dvh" }} className="bg-background overflow-hidden">
+    <div style={{ 
+      display: "flex", 
+      flexDirection: "column", 
+      height: "100dvh",
+      paddingTop: "max(env(safe-area-inset-top), 0px)",
+      paddingBottom: "max(env(safe-area-inset-bottom), 0px)"
+    }} className="bg-background overflow-hidden">
 
       {/* ── Header ──────────────────────────────────────────── */}
       <header
-        className="shrink-0 bg-background/90 backdrop-blur-sm border-b border-border/60 flex items-end px-4 pb-3 z-40"
-        style={{ paddingTop: "env(safe-area-inset-top)", minHeight: "calc(3rem + env(safe-area-inset-top))" }}
+        className={headerClass}
+        style={{ 
+          minHeight: "2.75rem",
+          paddingTop: "max(env(safe-area-inset-top), 0px)",
+          paddingLeft: "env(safe-area-inset-left)",
+          paddingRight: "env(safe-area-inset-right)"
+        }}
       >
         <span className="text-base font-semibold tracking-tight">{title}</span>
         <span className="ml-2 text-[10px] text-muted-foreground border border-border/60 rounded-full px-1.5 py-0.5 font-mono">
@@ -277,7 +362,7 @@ export default function Home() {
       </header>
 
       {/* ── Swipeable tab panels ─────────────────────────────── */}
-      <div ref={swipeRef} className="flex-1 overflow-hidden">
+      <div ref={swipeRef} className="flex-1 overflow-hidden pb-[7.5rem]">
         {/*
           All 5 panels are always mounted (preserves component state across swipes).
           Each panel is exactly 100vw wide; we shift with translateX.
@@ -322,15 +407,17 @@ export default function Home() {
       {/* ── Fixed bottom: search bar + tab nav ─────────────── */}
       {/* translateY lifts the bar above the keyboard (adjustNothing mode) */}
       <div
-        className="shrink-0 bg-background border-t border-border/60 z-50"
+        className={bottomBarClass}
         style={{
           transform: keyboardHeight > 0 ? `translateY(-${keyboardHeight}px)` : "translateY(0)",
           transition: "transform 0.15s ease-out",
+          paddingLeft: "env(safe-area-inset-left)",
+          paddingRight: "env(safe-area-inset-right)",
         }}
       >
 
         {/* Search bar */}
-        <div className="h-14 flex items-center px-3 gap-2 border-b border-border/40">
+        <div className={searchBarBorderClass}>
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
             <Input
@@ -338,7 +425,7 @@ export default function Home() {
               onChange={(e) => setSearchInput(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleSearch()}
               placeholder={isEn ? "Search Chinese or English…" : "中国語または日本語で検索…"}
-              className="pl-9 pr-8 h-9 text-sm rounded-xl border-border/60 bg-muted/40 focus-visible:ring-1"
+              className={searchInputClass}
             />
             {searchInput && (
               <button
@@ -353,7 +440,7 @@ export default function Home() {
           <button
             onClick={handleSearch}
             disabled={!searchInput.trim()}
-            className="shrink-0 h-9 px-4 rounded-xl bg-primary text-primary-foreground text-sm font-medium disabled:opacity-40 transition-opacity"
+            className={searchButtonClass}
           >
             {isEn ? "Search" : "検索"}
           </button>
@@ -361,7 +448,7 @@ export default function Home() {
 
         {/* Tab navigation — hidden when soft keyboard is open */}
         {!keyboardOpen && <nav
-          className="h-14 flex items-stretch"
+          className={tabNavClass}
           style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
         >
           {TABS.map((tab, i) => {
@@ -370,8 +457,8 @@ export default function Home() {
               <button
                 key={tab.value}
                 onClick={() => setTabIndex(i)}
-                className={`flex-1 flex flex-col items-center justify-center gap-0.5 transition-colors ${
-                  isActive ? "text-primary" : "text-muted-foreground"
+                className={`flex-1 flex flex-col items-center justify-center gap-0.5 transition-all ${
+                  isActive ? tabButtonActiveClass : tabButtonInactiveClass
                 }`}
               >
                 <tab.Icon className={`h-5 w-5 transition-all ${isActive ? "stroke-[2.5]" : "stroke-2"}`} />

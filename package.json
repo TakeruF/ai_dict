@@ -5,14 +5,20 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "export": "next build && next export",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "ios:build": "npm run build && npx cap build ios",
+    "ios:open": "npx cap open ios",
+    "ios:sync": "npx cap sync ios",
+    "cap:add:ios": "npx cap add ios"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.78.0",
     "@capacitor/android": "^8.1.0",
     "@capacitor/core": "^8.1.0",
     "@capacitor/haptics": "^8.0.1",
+    "@capacitor/ios": "^8.1.0",
     "@google/generative-ai": "^0.24.1",
     "@tanstack/react-query": "^5.90.21",
     "class-variance-authority": "^0.7.1",
