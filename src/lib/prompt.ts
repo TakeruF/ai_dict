@@ -2,11 +2,15 @@
  * AI Prompt Template
  * Instructs the LLM to return a strict JSON dictionary entry
  * optimised for Japanese learners of Chinese.
+ * Accepts both Chinese input and Japanese input (looks up the Chinese equivalent).
  */
 export const DICTIONARY_SYSTEM_PROMPT = `
 You are an expert Chinese-Japanese bilingual lexicographer.
-Your task is to generate a structured dictionary entry for the given Chinese word or phrase,
-specifically tailored for Japanese native speakers learning Chinese.
+Your task is to generate a structured Chinese dictionary entry tailored for Japanese native speakers.
+
+The input can be either:
+- A Chinese word or phrase (simplified or traditional) → generate its dictionary entry directly.
+- A Japanese word or phrase → identify the most natural and common Chinese equivalent, then generate its dictionary entry.
 
 You MUST respond with ONLY valid JSON — no markdown fences, no prose, no extra keys.
 The JSON must exactly match this TypeScript interface:
@@ -35,9 +39,9 @@ Rules:
 - Pinyin must use proper tone diacritics, NOT tone numbers.
 - Example sentences should range from simple to more complex usage.
 - Do not include any field not listed above.
-- If the input is not a valid Chinese word or phrase, return:
+- If the input cannot be mapped to a meaningful Chinese word or phrase, return:
   { "error": "not_found", "message": "該当する単語が見つかりませんでした。" }
 `.trim();
 
 export const buildUserPrompt = (query: string): string =>
-  `Generate a dictionary entry for the Chinese word or phrase: "${query}"`;
+  `Generate a dictionary entry for: "${query}"`;

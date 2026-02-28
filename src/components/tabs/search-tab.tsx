@@ -96,7 +96,7 @@ export function SearchTab({ onNavigate }: SearchTabProps) {
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="中国語を入力してください（例：你好、学习）"
+            placeholder="中国語または日本語で入力（例：你好、ありがとう）"
             className="pl-9 pr-9 h-11 text-base rounded-xl border-border/60 bg-card focus-visible:ring-1"
             autoFocus
           />
@@ -152,13 +152,13 @@ function EmptyState() {
         <Search className="h-7 w-7 text-muted-foreground/60" />
       </div>
       <div>
-        <p className="text-sm font-medium text-foreground">中国語を検索</p>
+        <p className="text-sm font-medium text-foreground">中国語・日本語で検索</p>
         <p className="text-xs text-muted-foreground mt-1">
-          単語やフレーズを入力してAIが解説します
+          中国語または日本語で入力するとAIが中国語の解説を表示します
         </p>
       </div>
       <div className="flex flex-wrap gap-2 justify-center mt-2">
-        {["你好", "谢谢", "学习", "朋友", "工作"].map((w) => (
+        {["你好", "谢谢", "ありがとう", "友達", "勉強する"].map((w) => (
           <Badge
             key={w}
             variant="outline"
