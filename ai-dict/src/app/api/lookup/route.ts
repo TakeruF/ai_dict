@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 import { DICTIONARY_SYSTEM_PROMPT, buildUserPrompt } from "@/lib/prompt";
 import { DictionaryEntry } from "@/types/dictionary";
 
@@ -19,11 +20,72 @@ function isValidEntry(data: unknown): data is DictionaryEntry {
   );
 }
 
+// ── Strip markdown fences the LLM sometimes adds ───────────────────
+function stripFences(raw: string): string {
+  return raw.replace(/^```(?:json)?\s*/i, "").replace(/\s*```\s*$/, "").trim();
+}
+
+// ── Provider implementations ───────────────────────────────────────
+async function callAnthropic(query: string, apiKey: string): Promise<string> {
+  const client = new Anthropic({ apiKey });
+  const message = await client.messages.create({
+    model: "claude-sonnet-4-6",
+    max_tokens: 1024,
+    system: DICTIONARY_SYSTEM_PROMPT,
+    messages: [{ role: "user", content: buildUserPrompt(query) }],
+  });
+  return message.content
+    .filter((b) => b.type === "text")
+    .map((b) => (b as { type: "text"; text: string }).text)
+    .join("");
+}
+
+async function callOpenAI(query: string, apiKey: string): Promise<string> {
+  const res = await fetch("https://api.openai.com/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify({
+      model: "gpt-4o",
+      max_tokens: 1024,
+      messages: [
+        { role: "system", content: DICTIONARY_SYSTEM_PROMPT },
+        { role: "user", content: buildUserPrompt(query) },
+      ],
+      response_format: { type: "json_object" },
+    }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error((err as Record<string, unknown>)?.error?.toString() ?? `OpenAI ${res.status}`);
+  }
+  const data = await res.json();
+  return data.choices?.[0]?.message?.content ?? "";
+}
+
+async function callGemini(query: string, apiKey: string): Promise<string> {
+  const genAI = new GoogleGenerativeAI(apiKey);
+  const model = genAI.getGenerativeModel({
+    model: "gemini-2.0-flash",
+    systemInstruction: DICTIONARY_SYSTEM_PROMPT,
+    generationConfig: {
+      responseMimeType: "application/json",
+      maxOutputTokens: 1024,
+    },
+  });
+  const result = await model.generateContent(buildUserPrompt(query));
+  return result.response.text();
+}
+
+// ── Route handler ──────────────────────────────────────────────────
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
     const query: string = (body.query ?? "").trim();
     const apiKey: string = body.apiKey ?? "";
+    const provider: string = body.provider ?? "anthropic";
 
     if (!query) {
       return NextResponse.json({ error: "empty_query" }, { status: 400 });
@@ -32,23 +94,18 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "missing_api_key" }, { status: 401 });
     }
 
-    const client = new Anthropic({ apiKey });
-
-    const message = await client.messages.create({
-      model: "claude-sonnet-4-6",
-      max_tokens: 1024,
-      system: DICTIONARY_SYSTEM_PROMPT,
-      messages: [{ role: "user", content: buildUserPrompt(query) }],
-    });
-
-    const raw = message.content
-      .filter((b) => b.type === "text")
-      .map((b) => (b as { type: "text"; text: string }).text)
-      .join("");
+    let raw: string;
+    if (provider === "gemini") {
+      raw = await callGemini(query, apiKey);
+    } else if (provider === "openai") {
+      raw = await callOpenAI(query, apiKey);
+    } else {
+      raw = await callAnthropic(query, apiKey);
+    }
 
     let parsed: unknown;
     try {
-      parsed = JSON.parse(raw);
+      parsed = JSON.parse(stripFences(raw));
     } catch {
       return NextResponse.json({ error: "parse_error", raw }, { status: 502 });
     }

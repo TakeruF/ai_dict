@@ -39,17 +39,23 @@ export function SettingsTab() {
           <div className="flex flex-col gap-2">
             <label className="text-xs text-muted-foreground">プロバイダー</label>
             <div className="flex gap-2">
-              {(["anthropic", "openai"] as const).map((p) => (
+              {(
+                [
+                  { id: "anthropic", label: "Claude"  },
+                  { id: "gemini",    label: "Gemini"  },
+                  { id: "openai",    label: "GPT-4o"  },
+                ] as const
+              ).map(({ id, label }) => (
                 <button
-                  key={p}
-                  onClick={() => setSettings((s) => ({ ...s, provider: p }))}
+                  key={id}
+                  onClick={() => setSettings((s) => ({ ...s, provider: id, apiKey: "" }))}
                   className={`flex-1 rounded-xl border py-2.5 text-sm transition-colors ${
-                    settings.provider === p
+                    settings.provider === id
                       ? "border-primary bg-primary/5 text-primary font-medium"
                       : "border-border/60 text-muted-foreground hover:border-border"
                   }`}
                 >
-                  {p === "anthropic" ? "Anthropic (Claude)" : "OpenAI (GPT)"}
+                  {label}
                 </button>
               ))}
             </div>
@@ -60,7 +66,11 @@ export function SettingsTab() {
             <label className="text-xs text-muted-foreground">
               APIキー{" "}
               <Badge variant="outline" className="text-[10px] font-normal ml-1">
-                {settings.provider === "anthropic" ? "sk-ant-..." : "sk-..."}
+                {settings.provider === "anthropic"
+                  ? "sk-ant-..."
+                  : settings.provider === "gemini"
+                  ? "AIza..."
+                  : "sk-..."}
               </Badge>
             </label>
             <div className="relative">
@@ -68,7 +78,13 @@ export function SettingsTab() {
                 type={showKey ? "text" : "password"}
                 value={settings.apiKey}
                 onChange={(e) => setSettings((s) => ({ ...s, apiKey: e.target.value }))}
-                placeholder={settings.provider === "anthropic" ? "sk-ant-..." : "sk-..."}
+                placeholder={
+                  settings.provider === "anthropic"
+                    ? "sk-ant-..."
+                    : settings.provider === "gemini"
+                    ? "AIzaSy..."
+                    : "sk-..."
+                }
                 className="pr-10 font-mono text-sm rounded-xl border-border/60"
               />
               <button
@@ -143,7 +159,7 @@ export function SettingsTab() {
       {/* ── About ───────────────────────────────────── */}
       <div className="text-center text-[11px] text-muted-foreground space-y-1 pb-2">
         <p>中日AI辞書 — beta</p>
-        <p>Powered by Claude Sonnet / GPT-4o</p>
+        <p>Powered by Claude Sonnet / Gemini 2.0 Flash / GPT-4o</p>
       </div>
     </div>
   );

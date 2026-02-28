@@ -14,11 +14,11 @@ import { addToHistory } from "@/lib/store";
 import { addFlashCard, getSettings } from "@/lib/store";
 import { DictEntryCard } from "@/components/dict-entry-card";
 
-async function fetchEntry(query: string, apiKey: string): Promise<DictionaryEntry> {
+async function fetchEntry(query: string, apiKey: string, provider: string): Promise<DictionaryEntry> {
   const res = await fetch("/api/lookup", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ query, apiKey }),
+    body: JSON.stringify({ query, apiKey, provider }),
   });
   const data = await res.json();
   if (!res.ok) {
@@ -41,8 +41,8 @@ export function SearchTab({ onNavigate }: SearchTabProps) {
   const settings = getSettings();
 
   const { data, isFetching, isError, error, isSuccess } = useQuery({
-    queryKey: ["lookup", activeQuery],
-    queryFn: () => fetchEntry(activeQuery, settings.apiKey),
+    queryKey: ["lookup", activeQuery, settings.provider],
+    queryFn: () => fetchEntry(activeQuery, settings.apiKey, settings.provider),
     enabled: activeQuery.length > 0,
   });
 
