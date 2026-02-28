@@ -22,14 +22,32 @@ interface SearchTabProps {
   onNavigate: (tab: string) => void;
 }
 
+// ── Language detection helper ───────────────────────────────────────
+/**
+ * Detect if a query is likely Japanese or Chinese.
+ * Returns "ja-zh" if likely Japanese, "zh-ja" if likely Chinese.
+ */
+function detectLanguage(query: string): "ja-zh" | "zh-ja" {
+  // Japanese detection: contains hiragana (ぁ-ん) or katakana (ァ-ン)
+  const japaneseRegex = /[\u3040-\u309F\u30A0-\u30FF]/;
+  if (japaneseRegex.test(query)) return "ja-zh";
+  
+  // Default to Chinese
+  return "zh-ja";
+}
+
 // ── Component ───────────────────────────────────────────────────────
 export function SearchTab({ lang, direction, query, onNavigate }: SearchTabProps) {
   const isEn     = lang === "en";
+  const isZh     = lang === "zh";
   const settings = getSettings();
 
+  // For Chinese speakers, auto-detect the search language
+  const effectiveDirection = isZh ? detectLanguage(query) : direction;
+
   const { data, isFetching, isError, error, isSuccess } = useQuery({
-    queryKey: ["lookup", query, settings.provider, lang, direction, settings.apiKey.slice(0, 8)],
-    queryFn:  () => lookupWord(query, settings.apiKey, settings.provider, lang, direction),
+    queryKey: ["lookup", query, settings.provider, lang, effectiveDirection, settings.apiKey.slice(0, 8)],
+    queryFn:  () => lookupWord(query, settings.apiKey, settings.provider, lang, effectiveDirection),
     enabled:  query.length > 0,
     // Errors from lookupWord already have .code attached; propagate as-is
     retry:    (failCount, err) => {
@@ -82,8 +100,11 @@ export function SearchTab({ lang, direction, query, onNavigate }: SearchTabProps
 
 function EmptyState({ lang }: { lang: NativeLanguage }) {
   const isEn = lang === "en";
+  const isZh = lang === "zh";
   const examples = isEn
     ? ["你好", "谢谢", "hello", "friend", "study"]
+    : isZh
+    ? ["你好", "の", "ありがとう", "友達", "勉強"]
     : ["你好", "谢谢", "ありがとう", "友達", "勉強する"];
 
   return (
@@ -93,11 +114,13 @@ function EmptyState({ lang }: { lang: NativeLanguage }) {
       </div>
       <div>
         <p className="text-sm font-medium text-foreground">
-          {isEn ? "Search in Chinese or English" : "中国語・日本語で検索"}
+          {isEn ? "Search in Chinese or English" : isZh ? "用中文或日语搜索" : "中国語・日本語で検索"}
         </p>
         <p className="text-xs text-muted-foreground mt-1">
           {isEn
             ? "Use the search bar below ↓"
+            : isZh
+            ? "使用下面的搜索栏 ↓"
             : "下の検索バーから入力してください ↓"}
         </p>
       </div>
@@ -150,6 +173,7 @@ function ErrorCard({
   onNavigate: (tab: string) => void;
 }) {
   const isEn = lang === "en";
+  const isZh = lang === "zh";
   const code = (error as CodedError).code ?? error.message;
 
   const isNotFound    = code === "not_found";
@@ -158,17 +182,17 @@ function ErrorCard({
   const isRateLimited = code === "rate_limited";
   const isNoBal       = code === "insufficient_balance";
 
-  const title = isNotFound     ? (isEn ? "Word not found"           : "単語が見つかりませんでした")
-    : isKeyMissing || isInvalidKey ? (isEn ? "API key issue"          : "APIキーに問題があります")
-    : isRateLimited              ? (isEn ? "Rate limit exceeded"      : "レート制限 / クォータ超過")
-    : isNoBal                    ? (isEn ? "Insufficient balance"     : "残高不足")
-    :                              (isEn ? "An error occurred"        : "エラーが発生しました");
+  const title = isNotFound     ? (isEn ? "Word not found"           : isZh ? "未找到单词" : "単語が見つかりませんでした")
+    : isKeyMissing || isInvalidKey ? (isEn ? "API key issue"          : isZh ? "API 密钥问题" : "APIキーに問題があります")
+    : isRateLimited              ? (isEn ? "Rate limit exceeded"      : isZh ? "速率限制已超出" : "レート制限 / クォータ超過")
+    : isNoBal                    ? (isEn ? "Insufficient balance"     : isZh ? "余额不足" : "残高不足")
+    :                              (isEn ? "An error occurred"        : isZh ? "发生了错误" : "エラーが発生しました");
 
-  const detail = isNotFound     ? (isEn ? "Check your input and try again." : "入力を確認して再試行してください。")
-    : isKeyMissing               ? (isEn ? "Please add your API key in Settings." : "設定タブでAPIキーを追加してください。")
-    : isInvalidKey               ? (isEn ? "Invalid API key. Check Settings."     : "APIキーが無効です。設定タブで確認してください。")
-    : isRateLimited              ? (isEn ? "Too many requests. Wait and retry."    : "リクエスト数が上限に達しました。しばらくお待ちください。")
-    : isNoBal                    ? (isEn ? "Add credit to your API account."      : "APIアカウントの残高を追加してください。")
+  const detail = isNotFound     ? (isEn ? "Check your input and try again." : isZh ? "检查您的输入并重试。" : "入力を確認して再試行してください。")
+    : isKeyMissing               ? (isEn ? "Please add your API key in Settings." : isZh ? "请在设置中添加您的 API 密钥。" : "設定タブでAPIキーを追加してください。")
+    : isInvalidKey               ? (isEn ? "Invalid API key. Check Settings."     : isZh ? "API 密钥无效。检查设置。" : "APIキーが無効です。設定タブで確認してください。")
+    : isRateLimited              ? (isEn ? "Too many requests. Wait and retry."    : isZh ? "请求过多。请等待并重试。" : "リクエスト数が上限に達しました。しばらくお待ちください。")
+    : isNoBal                    ? (isEn ? "Add credit to your API account."      : isZh ? "向您的 API 帐户添加积分。" : "APIアカウントの残高を追加してください。")
     :                              error.message;
 
   const billingLink    = BILLING_LINKS[provider];

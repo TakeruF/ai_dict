@@ -16,11 +16,11 @@ import { useLiquidGlassNative } from "@/hooks/useLiquidGlassNative";
 
 // ── Tab definitions ─────────────────────────────────────────────────
 const TABS = [
-  { value: "search",   Icon: Search,   labelJa: "検索",  labelEn: "Search"    },
-  { value: "memorize", Icon: Brain,    labelJa: "暗記",   labelEn: "Memorize"  },
-  { value: "history",  Icon: Clock,    labelJa: "履歴",  labelEn: "History"   },
-  { value: "resource", Icon: BookOpen, labelJa: "教材",  labelEn: "Resources" },
-  { value: "settings", Icon: Settings, labelJa: "設定",  labelEn: "Settings"  },
+  { value: "search",   Icon: Search,   labelJa: "検索",  labelEn: "Search",     labelZh: "搜索"    },
+  { value: "memorize", Icon: Brain,    labelJa: "暗記",   labelEn: "Memorize",   labelZh: "记忆"    },
+  { value: "history",  Icon: Clock,    labelJa: "履歴",  labelEn: "History",    labelZh: "历史"    },
+  { value: "resource", Icon: BookOpen, labelJa: "教材",  labelEn: "Resources",  labelZh: "资源"    },
+  { value: "settings", Icon: Settings, labelJa: "設定",  labelEn: "Settings",   labelZh: "设置"    },
 ] as const;
 
 const SEARCH_IDX   = 0;
@@ -85,22 +85,13 @@ function LanguagePicker({
         {/* Chinese speakers */}
         <div>
           <p className="text-sm font-semibold mb-2 text-center text-muted-foreground">中文用户</p>
-          <div className="grid grid-cols-2 gap-2">
-            <button
-              onClick={() => onSelect("zh", "zh-ja")}
-              className="rounded-2xl border-2 border-border hover:border-primary hover:bg-primary/5 active:scale-[0.98] transition-all p-4 text-left"
-            >
-              <p className="text-lg font-bold">中日字典</p>
-              <p className="text-xs text-muted-foreground mt-1">中文 → 日语</p>
-            </button>
-            <button
-              onClick={() => onSelect("zh", "ja-zh")}
-              className="rounded-2xl border-2 border-border hover:border-primary hover:bg-primary/5 active:scale-[0.98] transition-all p-4 text-left"
-            >
-              <p className="text-lg font-bold">日中字典</p>
-              <p className="text-xs text-muted-foreground mt-1">日语 → 中文</p>
-            </button>
-          </div>
+          <button
+            onClick={() => onSelect("zh", "zh-ja")}
+            className="rounded-2xl border-2 border-border hover:border-primary hover:bg-primary/5 active:scale-[0.98] transition-all p-4 w-full text-left"
+          >
+            <p className="text-lg font-bold">中文 AI 字典</p>
+            <p className="text-xs text-muted-foreground mt-1">自动检测日语或中文搜索</p>
+          </button>
         </div>
       </div>
     </div>
@@ -277,7 +268,8 @@ export default function Home() {
   if (lang === null) return <LanguagePicker onSelect={handleLangSelect} />;
 
   const isEn     = lang === "en";
-  const title    = isEn ? "Zh-En AI Dict" : "中日AI辞書";
+  const isZh     = lang === "zh";
+  const title    = isEn ? "Zh-En AI Dict" : isZh ? "中文 AI 字典" : "中日AI辞書";
   const isNative = isCapacitor(); // safe: mounted guard ensures client-side
 
   // ── iOS Liquid Glass styles ────────────────────────────────────────
@@ -331,7 +323,7 @@ export default function Home() {
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-                placeholder={isEn ? "Search Chinese or English…" : "中国語または日本語で検索…"}
+                placeholder={isEn ? "Search Chinese or English…" : isZh ? "用中文或日语搜索…" : "中国語または日本語で検索…"}
                 className="pl-9 pr-8 h-9 text-sm rounded-xl border-border/60 bg-muted/40 focus-visible:ring-1"
               />
               {searchInput && (
@@ -367,7 +359,7 @@ export default function Home() {
                   }`}
                 >
                   <tab.Icon className={`h-4 w-4 shrink-0 ${isActive ? "stroke-[2.5]" : "stroke-2"}`} />
-                  {isEn ? tab.labelEn : tab.labelJa}
+                  {isEn ? tab.labelEn : isZh ? (tab as any).labelZh : tab.labelJa}
                 </button>
               );
             })}
@@ -517,7 +509,7 @@ export default function Home() {
               >
                 <tab.Icon className={`h-5 w-5 transition-all ${isActive ? "stroke-[2.5]" : "stroke-2"}`} />
                 <span className="text-[10px] font-medium leading-none">
-                  {isEn ? tab.labelEn : tab.labelJa}
+                  {isEn ? tab.labelEn : isZh ? (tab as any).labelZh : tab.labelJa}
                 </span>
               </button>
             );
