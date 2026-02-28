@@ -25,6 +25,18 @@ function stripFences(raw: string): string {
   return raw.replace(/^```(?:json)?\s*/i, "").replace(/\s*```\s*$/, "").trim();
 }
 
+/**
+ * Remove invisible/non-printable Unicode characters from API keys.
+ * Copy-paste from browsers/PDFs often injects U+2028 (LINE SEPARATOR),
+ * U+2029 (PARAGRAPH SEPARATOR), BOM, zero-width spaces, etc.
+ * HTTP headers only accept latin-1 (≤ 0xFF), so these cause a ByteString error.
+ */
+function sanitizeKey(key: string): string {
+  // Keep only printable ASCII (0x20–0x7E) and strip everything else
+  // eslint-disable-next-line no-control-regex
+  return key.replace(/[^\x20-\x7E]/g, "").trim();
+}
+
 // ── Provider implementations ───────────────────────────────────────
 async function callAnthropic(query: string, apiKey: string): Promise<string> {
   const client = new Anthropic({ apiKey });
@@ -59,7 +71,8 @@ async function callOpenAI(query: string, apiKey: string): Promise<string> {
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
-    throw new Error((err as Record<string, unknown>)?.error?.toString() ?? `OpenAI ${res.status}`);
+    const msg = (err as { error?: { message?: string } })?.error?.message;
+    throw new Error(msg ?? `OpenAI error ${res.status}`);
   }
   const data = await res.json();
   return data.choices?.[0]?.message?.content ?? "";
@@ -67,8 +80,9 @@ async function callOpenAI(query: string, apiKey: string): Promise<string> {
 
 async function callGemini(query: string, apiKey: string): Promise<string> {
   const genAI = new GoogleGenerativeAI(apiKey);
+  // gemini-2.0-flash-lite has a more generous free-tier quota than gemini-2.0-flash
   const model = genAI.getGenerativeModel({
-    model: "gemini-2.0-flash",
+    model: "gemini-2.0-flash-lite",
     systemInstruction: DICTIONARY_SYSTEM_PROMPT,
     generationConfig: {
       responseMimeType: "application/json",
@@ -79,17 +93,53 @@ async function callGemini(query: string, apiKey: string): Promise<string> {
   return result.response.text();
 }
 
+// ── Structured error extraction ────────────────────────────────────
+function extractErrorInfo(err: unknown): { status: number; code: string; message: string } {
+  const msg = err instanceof Error ? err.message : String(err);
+
+  // Gemini 429
+  if (msg.includes("429") || msg.includes("Too Many Requests") || msg.includes("quota")) {
+    return {
+      status: 429,
+      code: "rate_limited",
+      message:
+        "APIのレート制限またはクォータに達しました。しばらく待ってから再試行してください。Geminiの無料枠を使い切った場合はGoogle AI Studioで課金を有効にしてください。",
+    };
+  }
+
+  // Auth errors
+  if (
+    msg.includes("401") ||
+    msg.includes("Unauthorized") ||
+    msg.includes("invalid x-api-key") ||
+    msg.includes("API_KEY_INVALID") ||
+    msg.includes("invalid_api_key")
+  ) {
+    return {
+      status: 401,
+      code: "invalid_api_key",
+      message: "APIキーが無効です。設定タブで正しいキーを入力してください。",
+    };
+  }
+
+  return { status: 500, code: "server_error", message: msg };
+}
+
 // ── Route handler ──────────────────────────────────────────────────
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
     const query: string = (body.query ?? "").trim();
-    const apiKey: string = body.apiKey ?? "";
+    const rawKey: string = body.apiKey ?? "";
     const provider: string = body.provider ?? "anthropic";
 
     if (!query) {
       return NextResponse.json({ error: "empty_query" }, { status: 400 });
     }
+
+    // Sanitize: strip invisible Unicode that breaks HTTP ByteString encoding
+    const apiKey = sanitizeKey(rawKey);
+
     if (!apiKey) {
       return NextResponse.json({ error: "missing_api_key" }, { status: 401 });
     }
@@ -126,7 +176,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json(parsed);
   } catch (err) {
-    const message = err instanceof Error ? err.message : "Unknown error";
-    return NextResponse.json({ error: "server_error", message }, { status: 500 });
+    const { status, code, message } = extractErrorInfo(err);
+    return NextResponse.json({ error: code, message }, { status });
   }
 }

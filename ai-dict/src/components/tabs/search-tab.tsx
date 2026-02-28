@@ -22,9 +22,11 @@ async function fetchEntry(query: string, apiKey: string, provider: string): Prom
   });
   const data = await res.json();
   if (!res.ok) {
-    if (data.error === "not_found") throw new Error("not_found");
-    if (data.error === "missing_api_key") throw new Error("missing_api_key");
-    throw new Error(data.message ?? "Unknown error");
+    // Propagate structured error codes so ErrorCard can render helpful messages
+    const code = data.error ?? "server_error";
+    const err = new Error(data.message ?? code);
+    (err as Error & { code: string }).code = code;
+    throw err;
   }
   return data as DictionaryEntry;
 }
@@ -190,6 +192,8 @@ function LoadingSkeleton() {
   );
 }
 
+type CodedError = Error & { code?: string };
+
 function ErrorCard({
   error,
   onNavigate,
@@ -197,29 +201,41 @@ function ErrorCard({
   error: Error;
   onNavigate: (tab: string) => void;
 }) {
-  const isNotFound = error.message === "not_found";
-  const isKeyMissing = error.message === "missing_api_key";
+  const code = (error as CodedError).code ?? error.message;
+
+  const isNotFound    = code === "not_found";
+  const isKeyMissing  = code === "missing_api_key";
+  const isInvalidKey  = code === "invalid_api_key";
+  const isRateLimited = code === "rate_limited";
+
+  const title = isNotFound
+    ? "単語が見つかりませんでした"
+    : isKeyMissing || isInvalidKey
+    ? "APIキーに問題があります"
+    : isRateLimited
+    ? "レート制限 / クォータ超過"
+    : "エラーが発生しました";
+
+  const detail = isNotFound
+    ? "入力を確認して、もう一度試してください。"
+    : isKeyMissing
+    ? "設定タブでAPIキーを追加してください。"
+    : isInvalidKey
+    ? "APIキーが無効です。設定タブで正しいキーを確認してください。"
+    : isRateLimited
+    ? error.message
+    : error.message;
+
+  const showSettingsBtn = isKeyMissing || isInvalidKey;
 
   return (
     <Card className="rounded-2xl border-destructive/30 bg-destructive/5">
       <CardContent className="p-6 flex gap-3 items-start">
         <AlertCircle className="h-5 w-5 text-destructive mt-0.5 shrink-0" />
         <div>
-          <p className="text-sm font-medium text-foreground">
-            {isNotFound
-              ? "単語が見つかりませんでした"
-              : isKeyMissing
-              ? "APIキーが必要です"
-              : "エラーが発生しました"}
-          </p>
-          <p className="text-xs text-muted-foreground mt-1">
-            {isNotFound
-              ? "入力を確認して、もう一度試してください。"
-              : isKeyMissing
-              ? "設定タブでAnthropicまたはOpenAIのAPIキーを追加してください。"
-              : error.message}
-          </p>
-          {isKeyMissing && (
+          <p className="text-sm font-medium text-foreground">{title}</p>
+          <p className="text-xs text-muted-foreground mt-1 leading-relaxed">{detail}</p>
+          {showSettingsBtn && (
             <Button
               size="sm"
               variant="outline"
