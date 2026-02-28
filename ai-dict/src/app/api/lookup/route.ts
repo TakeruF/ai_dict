@@ -93,9 +93,9 @@ const callDeepSeek = (query: string, apiKey: string) =>
 
 async function callGemini(query: string, apiKey: string): Promise<string> {
   const genAI = new GoogleGenerativeAI(apiKey);
-  // gemini-2.0-flash-lite has a more generous free-tier quota than gemini-2.0-flash
+  // gemini-2.5-flash: gemini-2.0-flash-lite was deprecated (0/0 free-tier quota)
   const model = genAI.getGenerativeModel({
-    model: "gemini-2.0-flash-lite",
+    model: "gemini-2.5-flash",
     systemInstruction: DICTIONARY_SYSTEM_PROMPT,
     generationConfig: {
       responseMimeType: "application/json",
