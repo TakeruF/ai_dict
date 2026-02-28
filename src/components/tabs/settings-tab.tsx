@@ -243,9 +243,16 @@ export function SettingsTab({ lang, onLangChange }: SettingsTabProps) {
         <div className="space-y-4">
           <Toggle
             checked={settings.reminderEnabled}
-            onChange={(v) => {
+            onChange={async (v) => {
               setSettings((s) => ({ ...s, reminderEnabled: v }));
-              if (v && isSupported) requestPermission(); // Ask for permission immediately on toggle-on
+              if (v && isSupported) {
+                const granted = await requestPermission();
+                toast[granted ? "success" : "error"](
+                  isEn
+                    ? (granted ? "Notification permission granted" : "Notification permission denied — enable in system settings")
+                    : (granted ? "通知の許可を取得しました" : "通知が拒否されました。設定アプリから許可してください"),
+                );
+              }
             }}
             label={isEn ? "Daily study reminder" : "毎日の学習リマインダー"}
             description={isEn

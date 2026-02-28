@@ -66,23 +66,26 @@ export default function Home() {
   const [dragX, setDragX]         = useState(0);
   const [dragging, setDragging]   = useState(false);
 
-  // Keyboard detection — hide tab nav when soft keyboard is open
-  const [keyboardOpen, setKeyboardOpen] = useState(false);
-  const initialHeightRef = useRef(0);
+  // Keyboard height in px (0 = closed). With adjustNothing, visualViewport.height
+  // shrinks by exactly the keyboard height while window.innerHeight stays fixed.
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
 
   // Keep ref in sync with state (closure-safe in touch handlers)
   useEffect(() => { tabIdxRef.current = tabIndex; }, [tabIndex]);
+
+  // Derived — keyboard is considered open when height delta > 50px
+  const keyboardOpen = keyboardHeight > 50;
 
   // ── Load settings ────────────────────────────────────────────────
   useEffect(() => {
     setLang(getSettings().nativeLanguage);
     setMounted(true);
-    // Keyboard detection via visualViewport (reliable on Android Capacitor)
-    initialHeightRef.current = window.innerHeight;
+    // With adjustNothing, window.innerHeight stays fixed and visualViewport.height
+    // shrinks by the keyboard height — use that delta to position the bottom bar.
     const vv = window.visualViewport;
     const onViewportResize = () => {
-      const h = vv ? vv.height : window.innerHeight;
-      setKeyboardOpen(h < initialHeightRef.current * 0.8);
+      const vpH = vv ? vv.height : window.innerHeight;
+      setKeyboardHeight(Math.max(0, window.innerHeight - vpH));
     };
     if (vv) {
       vv.addEventListener("resize", onViewportResize);
@@ -239,7 +242,14 @@ export default function Home() {
       </div>
 
       {/* ── Fixed bottom: search bar + tab nav ─────────────── */}
-      <div className="shrink-0 bg-background border-t border-border/60 z-50">
+      {/* translateY lifts the bar above the keyboard (adjustNothing mode) */}
+      <div
+        className="shrink-0 bg-background border-t border-border/60 z-50"
+        style={{
+          transform: keyboardHeight > 0 ? `translateY(-${keyboardHeight}px)` : "translateY(0)",
+          transition: "transform 0.15s ease-out",
+        }}
+      >
 
         {/* Search bar */}
         <div className="h-14 flex items-center px-3 gap-2 border-b border-border/40">

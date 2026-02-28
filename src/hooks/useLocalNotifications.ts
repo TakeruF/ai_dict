@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useCallback } from "react";
+import { useCallback } from "react";
 
 /** Returns true when running inside a Capacitor native shell */
 function isCapacitor(): boolean {
@@ -24,10 +24,8 @@ async function getPlugin() {
 }
 
 export function useLocalNotifications() {
-  // Request permission when app starts (no-op in browser)
-  useEffect(() => {
-    getPlugin().then((plugin) => plugin?.requestPermissions().catch(() => {}));
-  }, []);
+  // Permission is requested on-demand (user gesture) rather than on mount,
+  // because the Capacitor bridge may not be ready immediately at startup.
 
   /**
    * Schedule (or re-schedule) a daily reminder at `hour:minute`.
