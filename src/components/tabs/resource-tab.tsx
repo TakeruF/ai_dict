@@ -5,6 +5,15 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 
+const HSK_LEVELS = [
+  { level: 1, label: "入門", words: 500 },
+  { level: 2, label: "初級", words: 772 },
+  { level: 3, label: "初中級", words: 973 },
+  { level: 4, label: "中級", words: 1000 },
+  { level: 5, label: "中上級", words: 1071 },
+  { level: 6, label: "上級", words: 1140 },
+];
+
 interface Resource {
   title: string;
   description: string;
@@ -111,6 +120,43 @@ const TAG_STYLE: Record<string, string> = {
 export function ResourceTab() {
   return (
     <div className="flex flex-col gap-6">
+      {/* HSK Word Lists */}
+      <div>
+        <h2 className="text-[11px] uppercase tracking-widest text-muted-foreground font-medium mb-3">
+          HSK 単語リスト
+        </h2>
+        <Card className="rounded-2xl border-border/60 overflow-hidden">
+          <CardContent className="p-0">
+            {HSK_LEVELS.map((hsk, i) => (
+              <div key={hsk.level}>
+                {i > 0 && <Separator />}
+                <a
+                  href={`/hsk/${hsk.level}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-start justify-between gap-4 px-4 py-3.5 hover:bg-muted/40 transition-colors group"
+                >
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-sm font-medium group-hover:text-primary transition-colors">
+                        HSK {hsk.level}
+                      </span>
+                      <Badge className="text-[10px] font-normal border-0 px-1.5 py-0 bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
+                        {hsk.label}
+                      </Badge>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      {hsk.words.toLocaleString()} 語
+                    </p>
+                  </div>
+                  <ExternalLink className="h-3.5 w-3.5 text-muted-foreground/50 group-hover:text-primary shrink-0 mt-0.5 transition-colors" />
+                </a>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      </div>
+
       {RESOURCES.map((section) => (
         <div key={section.heading}>
           <h2 className="text-[11px] uppercase tracking-widest text-muted-foreground font-medium mb-3">
