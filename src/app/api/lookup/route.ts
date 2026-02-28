@@ -108,7 +108,7 @@ const callOpenRouter = (query: string, apiKey: string) =>
     "qwen/qwen-2.5-72b-instruct:free",
     "OpenRouter",
     false,
-    { "HTTP-Referer": "https://ai-dict.vercel.app", "X-Title": "中日AI辞書" },
+    { "HTTP-Referer": "https://ai-dict.vercel.app", "X-Title": "Chinese-Japanese AI Dictionary" },
   );
 
 async function callGemini(query: string, apiKey: string): Promise<string> {
