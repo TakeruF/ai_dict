@@ -22,13 +22,30 @@ function isValidEntry(data: unknown): data is DictionaryEntry {
 
 // ── Strip markdown fences / prose and extract JSON object ──────────
 function stripFences(raw: string): string {
-  const stripped = raw.replace(/^```(?:json)?\s*/i, "").replace(/\s*```\s*$/, "").trim();
-  // If the result starts with { it's clean JSON
-  if (stripped.startsWith("{") || stripped.startsWith("[")) return stripped;
-  // Otherwise find the outermost { … } (handles "Here is the JSON: {...}")
-  const start = raw.indexOf("{");
-  const end = raw.lastIndexOf("}");
-  if (start !== -1 && end > start) return raw.slice(start, end + 1);
+  // Remove markdown code blocks
+  let stripped = raw.replace(/^```(?:json)?\s*/i, "").replace(/\s*```\s*$/i, "").trim();
+  
+  // Find outermost { … } while respecting nesting
+  let start = stripped.indexOf("{");
+  if (start === -1) start = raw.indexOf("{");
+  
+  let braceCount = 0;
+  let end = -1;
+  for (let i = start; i < stripped.length; i++) {
+    if (stripped[i] === "{") braceCount++;
+    else if (stripped[i] === "}") {
+      braceCount--;
+      if (braceCount === 0) {
+        end = i;
+        break;
+      }
+    }
+  }
+  
+  if (start !== -1 && end > start) {
+    return stripped.slice(start, end + 1);
+  }
+  
   return stripped;
 }
 
@@ -49,7 +66,7 @@ async function callAnthropic(query: string, apiKey: string, systemPrompt: string
   const client = new Anthropic({ apiKey });
   const message = await client.messages.create({
     model: "claude-sonnet-4-6",
-    max_tokens: 1024,
+    max_tokens: 512,  // トークン削減
     system: systemPrompt,
     messages: [{ role: "user", content: buildUserPrompt(query) }],
   });
@@ -69,6 +86,7 @@ async function callOpenAICompat(
   systemPrompt: string,
   jsonMode = true,
   extraHeaders: Record<string, string> = {},
+  maxTokens = 1024,
 ): Promise<string> {
   const res = await fetch(`${baseUrl}/chat/completions`, {
     method: "POST",
@@ -79,7 +97,7 @@ async function callOpenAICompat(
     },
     body: JSON.stringify({
       model,
-      max_tokens: 1024,
+      max_tokens: maxTokens,
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: buildUserPrompt(query) },
@@ -97,20 +115,31 @@ async function callOpenAICompat(
 }
 
 const callOpenAI = (query: string, apiKey: string, systemPrompt: string) =>
-  callOpenAICompat(query, apiKey, "https://api.openai.com/v1", "gpt-4o", "OpenAI", systemPrompt);
+  callOpenAICompat(query, apiKey, "https://api.openai.com/v1", "gpt-4o", "OpenAI", systemPrompt, true, {}, 512);
 
 const callDeepSeek = (query: string, apiKey: string, systemPrompt: string) =>
-  callOpenAICompat(query, apiKey, "https://api.deepseek.com/v1", "deepseek-chat", "DeepSeek", systemPrompt);
+  callOpenAICompat(
+    query,
+    apiKey,
+    "https://api.deepseek.com/v1",
+    "deepseek-chat",
+    "DeepSeek",
+    systemPrompt,
+    true,
+    {},
+    512,  // トークン削減：中国語は短い応答で十分
+  );
 
 const callOpenRouter = (query: string, apiKey: string, systemPrompt: string) =>
   callOpenAICompat(
     query, apiKey,
     "https://openrouter.ai/api/v1",
-    "xai/grok-3",
+    "meta-llama/llama-3.3-70b-instruct",
     "OpenRouter",
     systemPrompt,
-    true,
+    false,
     { "HTTP-Referer": "https://ai-dict.vercel.app", "X-OpenRouter-Title": "Chinese AI Dictionary" },
+    512,
   );
 
 async function callGemini(query: string, apiKey: string, systemPrompt: string): Promise<string> {
@@ -120,7 +149,7 @@ async function callGemini(query: string, apiKey: string, systemPrompt: string): 
     systemInstruction: systemPrompt,
     generationConfig: {
       responseMimeType: "application/json",
-      maxOutputTokens: 1024,
+      maxOutputTokens: 512,  // トークン削減
     },
   });
   const result = await model.generateContent(buildUserPrompt(query));
