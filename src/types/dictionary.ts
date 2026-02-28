@@ -1,5 +1,14 @@
 export type NativeLanguage = "en" | "ja";
 
+/**
+ * Dictionary search direction:
+ * - zh-ja: Chinese → Japanese
+ * - zh-en: Chinese → English
+ * - ja-zh: Japanese → Chinese
+ * - en-zh: English → Chinese
+ */
+export type DictionaryDirection = "zh-ja" | "zh-en" | "ja-zh" | "en-zh";
+
 export interface ExampleSentence {
   chinese: string;
   pinyin: string;

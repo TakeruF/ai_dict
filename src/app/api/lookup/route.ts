@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { getSystemPrompt, buildUserPrompt } from "@/lib/prompt";
-import { DictionaryEntry, NativeLanguage } from "@/types/dictionary";
+import { DictionaryEntry, NativeLanguage, DictionaryDirection } from "@/types/dictionary";
 
 // ── Type guard ─────────────────────────────────────────────────────
 function isValidEntry(data: unknown): data is DictionaryEntry {
@@ -203,6 +203,7 @@ export async function POST(req: NextRequest) {
     const rawKey: string = body.apiKey ?? "";
     const provider: string = body.provider ?? "anthropic";
     const nativeLanguage: NativeLanguage = body.nativeLanguage === "en" ? "en" : "ja";
+    const direction: DictionaryDirection = body.direction ?? "zh-ja";
 
     if (!query) {
       return NextResponse.json({ error: "empty_query" }, { status: 400 });
@@ -215,7 +216,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "missing_api_key" }, { status: 401 });
     }
 
-    const systemPrompt = getSystemPrompt(nativeLanguage);
+    const systemPrompt = getSystemPrompt(nativeLanguage, direction);
 
     let raw: string;
     if (provider === "gemini") {

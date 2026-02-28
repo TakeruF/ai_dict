@@ -5,7 +5,7 @@
  */
 "use client";
 
-import { DictionaryEntry, NativeLanguage } from "@/types/dictionary";
+import { DictionaryEntry, NativeLanguage, DictionaryDirection } from "@/types/dictionary";
 import { getSystemPrompt, buildUserPrompt } from "@/lib/prompt";
 
 // ── Type guard ──────────────────────────────────────────────────────
@@ -167,11 +167,12 @@ export async function lookupWord(
   apiKey: string,
   provider: string,
   nativeLanguage: NativeLanguage,
+  direction: DictionaryDirection = "zh-ja",
 ): Promise<DictionaryEntry> {
   const cleanKey = sanitizeKey(apiKey);
   if (!cleanKey) throw makeError("missing_api_key", "missing_api_key");
 
-  const systemPrompt = getSystemPrompt(nativeLanguage);
+  const systemPrompt = getSystemPrompt(nativeLanguage, direction);
 
   let raw: string;
   try {

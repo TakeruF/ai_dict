@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
-import { NativeLanguage } from "@/types/dictionary";
+import { NativeLanguage, DictionaryDirection } from "@/types/dictionary";
 import { addToHistory, addFlashCard, getSettings } from "@/lib/store";
 import { DictEntryCard } from "@/components/dict-entry-card";
 import { lookupWord } from "@/lib/lookup-client";
@@ -16,19 +16,20 @@ import { lookupWord } from "@/lib/lookup-client";
 // ── Props ───────────────────────────────────────────────────────────
 interface SearchTabProps {
   lang: NativeLanguage;
+  direction: DictionaryDirection;
   /** The submitted query — managed by the global bottom search bar in page.tsx */
   query: string;
   onNavigate: (tab: string) => void;
 }
 
 // ── Component ───────────────────────────────────────────────────────
-export function SearchTab({ lang, query, onNavigate }: SearchTabProps) {
+export function SearchTab({ lang, direction, query, onNavigate }: SearchTabProps) {
   const isEn     = lang === "en";
   const settings = getSettings();
 
   const { data, isFetching, isError, error, isSuccess } = useQuery({
-    queryKey: ["lookup", query, settings.provider, lang, settings.apiKey.slice(0, 8)],
-    queryFn:  () => lookupWord(query, settings.apiKey, settings.provider, lang),
+    queryKey: ["lookup", query, settings.provider, lang, direction, settings.apiKey.slice(0, 8)],
+    queryFn:  () => lookupWord(query, settings.apiKey, settings.provider, lang, direction),
     enabled:  query.length > 0,
     // Errors from lookupWord already have .code attached; propagate as-is
     retry:    (failCount, err) => {

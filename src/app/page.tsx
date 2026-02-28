@@ -8,7 +8,7 @@ import { MemorizeTab } from "@/components/tabs/memorize-tab";
 import { HistoryTab } from "@/components/tabs/history-tab";
 import { ResourceTab } from "@/components/tabs/resource-tab";
 import { SettingsTab } from "@/components/tabs/settings-tab";
-import { NativeLanguage } from "@/types/dictionary";
+import { NativeLanguage, DictionaryDirection } from "@/types/dictionary";
 import { getSettings, saveSettings } from "@/lib/store";
 import { isCapacitor } from "@/hooks/useHaptics";
 import { useIsIOS } from "@/hooks/useIsIOS";
@@ -28,7 +28,11 @@ const SETTINGS_IDX = 4;
 const SWIPE_THRESHOLD = 50;
 
 // ── First-run language picker ───────────────────────────────────────
-function LanguagePicker({ onSelect }: { onSelect: (lang: NativeLanguage) => void }) {
+function LanguagePicker({
+  onSelect,
+}: {
+  onSelect: (lang: NativeLanguage, direction: DictionaryDirection) => void;
+}) {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center gap-10 px-6 bg-background">
       <div className="text-center space-y-2">
@@ -36,20 +40,40 @@ function LanguagePicker({ onSelect }: { onSelect: (lang: NativeLanguage) => void
         <p className="text-muted-foreground">Chinese AI Dictionary</p>
       </div>
       <div className="flex flex-col gap-3 w-full max-w-xs">
-        <button
-          onClick={() => onSelect("ja")}
-          className="rounded-2xl border-2 border-border hover:border-primary hover:bg-primary/5 active:scale-[0.98] transition-all p-6 text-left"
-        >
-          <p className="text-2xl font-bold">日本語</p>
-          <p className="text-sm text-muted-foreground mt-1">中日AI辞書（日本語話者向け）</p>
-        </button>
-        <button
-          onClick={() => onSelect("en")}
-          className="rounded-2xl border-2 border-border hover:border-primary hover:bg-primary/5 active:scale-[0.98] transition-all p-6 text-left"
-        >
-          <p className="text-2xl font-bold">English</p>
-          <p className="text-sm text-muted-foreground mt-1">Zh-En AI Dictionary (for English speakers)</p>
-        </button>
+        <div>
+          <p className="text-sm font-semibold mb-2 text-center text-muted-foreground">日本語ユーザー向け</p>
+          <button
+            onClick={() => onSelect("ja", "zh-ja")}
+            className="rounded-2xl border-2 border-border hover:border-primary hover:bg-primary/5 active:scale-[0.98] transition-all p-6 text-left w-full"
+          >
+            <p className="text-2xl font-bold">中日辞典</p>
+            <p className="text-sm text-muted-foreground mt-1">中国語 → 日本語</p>
+          </button>
+          <button
+            onClick={() => onSelect("ja", "ja-zh")}
+            className="rounded-2xl border-2 border-border hover:border-primary hover:bg-primary/5 active:scale-[0.98] transition-all p-6 text-left w-full mt-2"
+          >
+            <p className="text-2xl font-bold">日中辞典</p>
+            <p className="text-sm text-muted-foreground mt-1">日本語 → 中国語</p>
+          </button>
+        </div>
+        <div>
+          <p className="text-sm font-semibold mb-2 text-center text-muted-foreground">English Users</p>
+          <button
+            onClick={() => onSelect("en", "zh-en")}
+            className="rounded-2xl border-2 border-border hover:border-primary hover:bg-primary/5 active:scale-[0.98] transition-all p-6 text-left w-full"
+          >
+            <p className="text-2xl font-bold">Zh-En Dictionary</p>
+            <p className="text-sm text-muted-foreground mt-1">Chinese → English</p>
+          </button>
+          <button
+            onClick={() => onSelect("en", "en-zh")}
+            className="rounded-2xl border-2 border-border hover:border-primary hover:bg-primary/5 active:scale-[0.98] transition-all p-6 text-left w-full mt-2"
+          >
+            <p className="text-2xl font-bold">En-Zh Dictionary</p>
+            <p className="text-sm text-muted-foreground mt-1">English → Chinese</p>
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -59,6 +83,7 @@ function LanguagePicker({ onSelect }: { onSelect: (lang: NativeLanguage) => void
 export default function Home() {
   const [mounted, setMounted]         = useState(false);
   const [lang, setLang]               = useState<NativeLanguage | null>(null);
+  const [direction, setDirection]     = useState<DictionaryDirection>("zh-ja");
   const [tabIndex, setTabIndex]       = useState(0);
   const [searchInput, setSearchInput] = useState("");
   const [activeQuery, setActiveQuery] = useState("");
@@ -197,9 +222,10 @@ export default function Home() {
   }, [tabIndex, isIOS, syncTabToNative]);
 
   // ── Handlers ─────────────────────────────────────────────────────
-  const handleLangSelect = (selected: NativeLanguage) => {
+  const handleLangSelect = (selected: NativeLanguage, selectedDirection: DictionaryDirection) => {
     saveSettings({ nativeLanguage: selected });
     setLang(selected);
+    setDirection(selectedDirection);
   };
 
   const handleSearch = useCallback(() => {
@@ -323,10 +349,10 @@ export default function Home() {
         {/* Main content */}
         <main className="flex-1 overflow-y-auto">
           <div className="max-w-3xl mx-auto px-8 py-8">
-            {tabIndex === 0 && <SearchTab lang={lang} query={activeQuery} onNavigate={navigateTo} />}
+            {tabIndex === 0 && <SearchTab lang={lang} direction={direction} query={activeQuery} onNavigate={navigateTo} />}
             {tabIndex === 1 && <MemorizeTab lang={lang} isVisible={tabIndex === 1} />}
             {tabIndex === 2 && <HistoryTab lang={lang} isVisible={tabIndex === 2} onNavigate={navigateTo} />}
-            {tabIndex === 3 && <ResourceTab isNative={false} />}
+            {tabIndex === 3 && <ResourceTab lang={lang} direction={direction} isNative={false} />}
             {tabIndex === 4 && <SettingsTab lang={lang} onLangChange={setLang} />}
           </div>
         </main>
@@ -379,7 +405,7 @@ export default function Home() {
         >
           {/* 0 — Search */}
           <div style={{ width: "100vw", height: "100%", overflowY: "auto" }} className="px-4 py-4">
-            <SearchTab lang={lang} query={activeQuery} onNavigate={navigateTo} />
+            <SearchTab lang={lang} direction={direction} query={activeQuery} onNavigate={navigateTo} />
           </div>
 
           {/* 1 — Memorize */}
@@ -394,7 +420,7 @@ export default function Home() {
 
           {/* 3 — Resources */}
           <div style={{ width: "100vw", height: "100%", overflowY: "auto" }} className="px-4 py-4">
-            <ResourceTab isNative={true} />
+            <ResourceTab lang={lang} direction={direction} isNative={true} />
           </div>
 
           {/* 4 — Settings */}
