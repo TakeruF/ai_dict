@@ -106,7 +106,7 @@ const callOpenRouter = (query: string, apiKey: string, systemPrompt: string) =>
   callOpenAICompat(
     query, apiKey,
     "https://openrouter.ai/api/v1",
-    "qwen/qwen3.5-flash-02-23",
+    "xai/grok-3",
     "OpenRouter",
     systemPrompt,
     true,
