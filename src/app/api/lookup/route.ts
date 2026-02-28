@@ -59,6 +59,7 @@ async function callOpenAICompat(
   baseUrl: string,
   model: string,
   providerLabel: string,
+  jsonMode = true,
 ): Promise<string> {
   const res = await fetch(`${baseUrl}/chat/completions`, {
     method: "POST",
@@ -73,7 +74,7 @@ async function callOpenAICompat(
         { role: "system", content: DICTIONARY_SYSTEM_PROMPT },
         { role: "user", content: buildUserPrompt(query) },
       ],
-      response_format: { type: "json_object" },
+      ...(jsonMode ? { response_format: { type: "json_object" } } : {}),
     }),
   });
   if (!res.ok) {
@@ -92,7 +93,7 @@ const callDeepSeek = (query: string, apiKey: string) =>
   callOpenAICompat(query, apiKey, "https://api.deepseek.com/v1", "deepseek-chat", "DeepSeek");
 
 const callOpenRouter = (query: string, apiKey: string) =>
-  callOpenAICompat(query, apiKey, "https://openrouter.ai/api/v1", "meta-llama/llama-3.3-70b-instruct:free", "OpenRouter");
+  callOpenAICompat(query, apiKey, "https://openrouter.ai/api/v1", "meta-llama/llama-3.3-70b-instruct:free", "OpenRouter", false);
 
 async function callGemini(query: string, apiKey: string): Promise<string> {
   const genAI = new GoogleGenerativeAI(apiKey);
