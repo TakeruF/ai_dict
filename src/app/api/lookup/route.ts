@@ -20,9 +20,16 @@ function isValidEntry(data: unknown): data is DictionaryEntry {
   );
 }
 
-// ── Strip markdown fences the LLM sometimes adds ───────────────────
+// ── Strip markdown fences / prose and extract JSON object ──────────
 function stripFences(raw: string): string {
-  return raw.replace(/^```(?:json)?\s*/i, "").replace(/\s*```\s*$/, "").trim();
+  const stripped = raw.replace(/^```(?:json)?\s*/i, "").replace(/\s*```\s*$/, "").trim();
+  // If the result starts with { it's clean JSON
+  if (stripped.startsWith("{") || stripped.startsWith("[")) return stripped;
+  // Otherwise find the outermost { … } (handles "Here is the JSON: {...}")
+  const start = raw.indexOf("{");
+  const end = raw.lastIndexOf("}");
+  if (start !== -1 && end > start) return raw.slice(start, end + 1);
+  return stripped;
 }
 
 /**
