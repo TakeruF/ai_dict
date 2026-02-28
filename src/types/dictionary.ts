@@ -1,18 +1,18 @@
-export type NativeLanguage = "en" | "ja";
+export type NativeLanguage = "en" | "ja" | "zh";
 
 /**
  * Dictionary search direction:
- * - zh-ja: Chinese → Japanese
- * - zh-en: Chinese → English
- * - ja-zh: Japanese → Chinese
- * - en-zh: English → Chinese
+ * - zh-ja: Chinese → Japanese (for Japanese learners)
+ * - zh-en: Chinese → English (for English learners)
+ * - ja-zh: Japanese → Chinese (for Chinese learners)
+ * - en-zh: English → Chinese (for Chinese learners)
  */
 export type DictionaryDirection = "zh-ja" | "zh-en" | "ja-zh" | "en-zh";
 
 export interface ExampleSentence {
   chinese: string;
-  pinyin: string;
-  translation: string; // Japanese for JA users, English for EN users
+  pinyin?: string;   // Optional: not needed for Chinese native speakers (they know Chinese pronunciation)
+  translation: string; // Japanese for JA users, English for EN users, or explanation for ZH users
 }
 
 export interface DictionaryEntry {
@@ -25,6 +25,8 @@ export interface DictionaryEntry {
   usageNote: string;
   hskLevel?: number;
   audioUrl?: string;
+  romanized?: string;   // Romanization (hiragana/romaji for Japanese, or IPA for other languages)
+  japanese?: string;    // Japanese expression/translation (for Chinese learners)
 }
 
 export interface SearchHistoryItem {

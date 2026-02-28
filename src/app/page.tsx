@@ -39,40 +39,68 @@ function LanguagePicker({
         <h1 className="text-4xl font-bold tracking-tight">中文 AI 辞書</h1>
         <p className="text-muted-foreground">Chinese AI Dictionary</p>
       </div>
-      <div className="flex flex-col gap-3 w-full max-w-xs">
+      <div className="flex flex-col gap-6 w-full max-w-2xl">
+        {/* Japanese speakers */}
         <div>
           <p className="text-sm font-semibold mb-2 text-center text-muted-foreground">日本語ユーザー向け</p>
-          <button
-            onClick={() => onSelect("ja", "zh-ja")}
-            className="rounded-2xl border-2 border-border hover:border-primary hover:bg-primary/5 active:scale-[0.98] transition-all p-6 text-left w-full"
-          >
-            <p className="text-2xl font-bold">中日辞典</p>
-            <p className="text-sm text-muted-foreground mt-1">中国語 → 日本語</p>
-          </button>
-          <button
-            onClick={() => onSelect("ja", "ja-zh")}
-            className="rounded-2xl border-2 border-border hover:border-primary hover:bg-primary/5 active:scale-[0.98] transition-all p-6 text-left w-full mt-2"
-          >
-            <p className="text-2xl font-bold">日中辞典</p>
-            <p className="text-sm text-muted-foreground mt-1">日本語 → 中国語</p>
-          </button>
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              onClick={() => onSelect("ja", "zh-ja")}
+              className="rounded-2xl border-2 border-border hover:border-primary hover:bg-primary/5 active:scale-[0.98] transition-all p-4 text-left"
+            >
+              <p className="text-lg font-bold">中日辞典</p>
+              <p className="text-xs text-muted-foreground mt-1">中国語 → 日本語</p>
+            </button>
+            <button
+              onClick={() => onSelect("ja", "ja-zh")}
+              className="rounded-2xl border-2 border-border hover:border-primary hover:bg-primary/5 active:scale-[0.98] transition-all p-4 text-left"
+            >
+              <p className="text-lg font-bold">日中辞典</p>
+              <p className="text-xs text-muted-foreground mt-1">日本語 → 中国語</p>
+            </button>
+          </div>
         </div>
+
+        {/* English speakers */}
         <div>
           <p className="text-sm font-semibold mb-2 text-center text-muted-foreground">English Users</p>
-          <button
-            onClick={() => onSelect("en", "zh-en")}
-            className="rounded-2xl border-2 border-border hover:border-primary hover:bg-primary/5 active:scale-[0.98] transition-all p-6 text-left w-full"
-          >
-            <p className="text-2xl font-bold">Zh-En Dictionary</p>
-            <p className="text-sm text-muted-foreground mt-1">Chinese → English</p>
-          </button>
-          <button
-            onClick={() => onSelect("en", "en-zh")}
-            className="rounded-2xl border-2 border-border hover:border-primary hover:bg-primary/5 active:scale-[0.98] transition-all p-6 text-left w-full mt-2"
-          >
-            <p className="text-2xl font-bold">En-Zh Dictionary</p>
-            <p className="text-sm text-muted-foreground mt-1">English → Chinese</p>
-          </button>
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              onClick={() => onSelect("en", "zh-en")}
+              className="rounded-2xl border-2 border-border hover:border-primary hover:bg-primary/5 active:scale-[0.98] transition-all p-4 text-left"
+            >
+              <p className="text-lg font-bold">Zh-En Dict</p>
+              <p className="text-xs text-muted-foreground mt-1">Chinese → English</p>
+            </button>
+            <button
+              onClick={() => onSelect("en", "en-zh")}
+              className="rounded-2xl border-2 border-border hover:border-primary hover:bg-primary/5 active:scale-[0.98] transition-all p-4 text-left"
+            >
+              <p className="text-lg font-bold">En-Zh Dict</p>
+              <p className="text-xs text-muted-foreground mt-1">English → Chinese</p>
+            </button>
+          </div>
+        </div>
+
+        {/* Chinese speakers */}
+        <div>
+          <p className="text-sm font-semibold mb-2 text-center text-muted-foreground">中文用户</p>
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              onClick={() => onSelect("zh", "zh-ja")}
+              className="rounded-2xl border-2 border-border hover:border-primary hover:bg-primary/5 active:scale-[0.98] transition-all p-4 text-left"
+            >
+              <p className="text-lg font-bold">中日字典</p>
+              <p className="text-xs text-muted-foreground mt-1">中文 → 日语</p>
+            </button>
+            <button
+              onClick={() => onSelect("zh", "ja-zh")}
+              className="rounded-2xl border-2 border-border hover:border-primary hover:bg-primary/5 active:scale-[0.98] transition-all p-4 text-left"
+            >
+              <p className="text-lg font-bold">日中字典</p>
+              <p className="text-xs text-muted-foreground mt-1">日语 → 中文</p>
+            </button>
+          </div>
         </div>
       </div>
     </div>

@@ -8,7 +8,7 @@ import { DictionaryEntry, NativeLanguage, DictionaryDirection } from "@/types/di
 function isValidEntry(data: unknown): data is DictionaryEntry {
   if (!data || typeof data !== "object") return false;
   const d = data as Record<string, unknown>;
-  return (
+  const isValid =
     typeof d.simplified === "string" &&
     typeof d.traditional === "string" &&
     typeof d.pinyin === "string" &&
@@ -16,8 +16,26 @@ function isValidEntry(data: unknown): data is DictionaryEntry {
     Array.isArray(d.definitions) &&
     Array.isArray(d.exampleSentences) &&
     d.exampleSentences.length === 3 &&
-    typeof d.usageNote === "string"
-  );
+    typeof d.usageNote === "string";
+
+  // Check optional fields if present
+  if (isValid) {
+    if (d.hskLevel !== undefined && typeof d.hskLevel !== "number") return false;
+    if (d.audioUrl !== undefined && typeof d.audioUrl !== "string") return false;
+    if (d.romanized !== undefined && typeof d.romanized !== "string") return false;
+    if (d.japanese !== undefined && typeof d.japanese !== "string") return false;
+    // Validate exampleSentences - pinyin is optional (not needed for Chinese learners)
+    if (Array.isArray(d.exampleSentences)) {
+      for (const ex of d.exampleSentences) {
+        if (!ex || typeof ex !== "object") return false;
+        if (typeof ex.chinese !== "string") return false;
+        if (ex.pinyin !== undefined && typeof ex.pinyin !== "string") return false;
+        if (typeof ex.translation !== "string") return false;
+      }
+    }
+  }
+  
+  return isValid;
 }
 
 // ── Strip markdown fences / prose and extract JSON object ──────────

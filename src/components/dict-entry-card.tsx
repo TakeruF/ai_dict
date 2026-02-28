@@ -35,6 +35,7 @@ export function DictEntryCard({ entry, lang = "ja", onAddFlashcard, compact = fa
   const [showAllExamples, setShowAllExamples] = useState(!compact);
 
   const isEn = lang === "en";
+  const isZh = lang === "zh";
 
   const handleTTS = useCallback(async () => {
     if (isPlaying) return;
@@ -89,6 +90,20 @@ export function DictEntryCard({ entry, lang = "ja", onAddFlashcard, compact = fa
                 {entry.pinyin}
               </p>
 
+              {/* Japanese equivalent & romanization (for Chinese learners) */}
+              {isZh && entry.japanese && (
+                <div className="mt-3 space-y-1">
+                  <p className="text-sm font-medium text-foreground">
+                    日本語：{entry.japanese}
+                  </p>
+                  {entry.romanized && (
+                    <p className="text-sm text-muted-foreground font-light">
+                      ローマ字：{entry.romanized}
+                    </p>
+                  )}
+                </div>
+              )}
+
               {/* Part of speech */}
               <div className="flex flex-wrap gap-1.5 mt-3">
                 {entry.partOfSpeech.map((pos) => (
@@ -118,7 +133,7 @@ export function DictEntryCard({ entry, lang = "ja", onAddFlashcard, compact = fa
                 className="h-9 w-9 rounded-full border-border/60"
                 onClick={handleTTS}
                 disabled={isPlaying}
-                title={isEn ? "Listen" : "発音を聞く"}
+                title={isEn ? "Listen" : isZh ? "朗读" : "発音を聞く"}
               >
                 {isPlaying ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
@@ -132,7 +147,7 @@ export function DictEntryCard({ entry, lang = "ja", onAddFlashcard, compact = fa
                   variant="outline"
                   className="h-9 w-9 rounded-full border-border/60"
                   onClick={onAddFlashcard}
-                  title={isEn ? "Add flashcard" : "フラッシュカードに追加"}
+                  title={isEn ? "Add flashcard" : isZh ? "添加卡片" : "フラッシュカードに追加"}
                 >
                   <BookmarkPlus className="h-4 w-4" />
                 </Button>
@@ -146,7 +161,7 @@ export function DictEntryCard({ entry, lang = "ja", onAddFlashcard, compact = fa
         {/* ── Definitions ───────────────────────────── */}
         <div className="px-6 py-4">
           <h3 className="text-[11px] uppercase tracking-widest text-muted-foreground mb-3 font-medium">
-            {isEn ? "Meaning" : "意味"}
+            {isEn ? "Meaning" : isZh ? "意思" : "意味"}
           </h3>
           <ol className="space-y-1.5">
             {entry.definitions.map((def, i) => (
@@ -164,7 +179,7 @@ export function DictEntryCard({ entry, lang = "ja", onAddFlashcard, compact = fa
         <div className="px-6 py-4">
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-[11px] uppercase tracking-widest text-muted-foreground font-medium">
-              {isEn ? "Examples" : "例文"}
+              {isEn ? "Examples" : isZh ? "例句" : "例文"}
             </h3>
             {compact && (
               <button
@@ -172,9 +187,9 @@ export function DictEntryCard({ entry, lang = "ja", onAddFlashcard, compact = fa
                 className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
               >
                 {showAllExamples ? (
-                  <><ChevronUp className="h-3.5 w-3.5" />{isEn ? "Collapse" : "折りたたむ"}</>
+                  <><ChevronUp className="h-3.5 w-3.5" />{isEn ? "Collapse" : isZh ? "折叠" : "折りたたむ"}</>
                 ) : (
-                  <><ChevronDown className="h-3.5 w-3.5" />{isEn ? "Show all" : "すべて表示"}</>
+                  <><ChevronDown className="h-3.5 w-3.5" />{isEn ? "Show all" : isZh ? "显示全部" : "すべて表示"}</>
                 )}
               </button>
             )}
@@ -183,7 +198,7 @@ export function DictEntryCard({ entry, lang = "ja", onAddFlashcard, compact = fa
             {displayedExamples.map((ex, i) => (
               <div key={i} className="space-y-0.5">
                 <p className="text-sm char-display text-foreground">{ex.chinese}</p>
-                <p className="text-xs text-muted-foreground">{ex.pinyin}</p>
+                {ex.pinyin && <p className="text-xs text-muted-foreground">{ex.pinyin}</p>}
                 <p className="text-sm text-foreground/80 mt-1">{getTranslation(ex)}</p>
               </div>
             ))}
@@ -195,7 +210,7 @@ export function DictEntryCard({ entry, lang = "ja", onAddFlashcard, compact = fa
         {/* ── Usage note ────────────────────────────── */}
         <div className="px-6 py-4 bg-muted/30 rounded-b-2xl">
           <h3 className="text-[11px] uppercase tracking-widest text-muted-foreground mb-2 font-medium">
-            {isEn ? "Usage Note" : "使い方のヒント"}
+            {isEn ? "Usage Note" : isZh ? "用法提示" : "使い方のヒント"}
           </h3>
           <p className="text-sm leading-relaxed text-foreground/80">{entry.usageNote}</p>
         </div>
