@@ -106,11 +106,11 @@ const callOpenRouter = (query: string, apiKey: string, systemPrompt: string) =>
   callOpenAICompat(
     query, apiKey,
     "https://openrouter.ai/api/v1",
-    "stepfun/step-3.5-flash:free",
+    "qwen/qwen3.5-flash-02-23",
     "OpenRouter",
     systemPrompt,
-    false,
-    { "HTTP-Referer": "https://ai-dict.vercel.app", "X-Title": "Chinese AI Dictionary" },
+    true,
+    { "HTTP-Referer": "https://ai-dict.vercel.app", "X-OpenRouter-Title": "Chinese AI Dictionary" },
   );
 
 async function callGemini(query: string, apiKey: string, systemPrompt: string): Promise<string> {
