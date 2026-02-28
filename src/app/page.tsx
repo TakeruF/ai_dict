@@ -77,13 +77,19 @@ export default function Home() {
   useEffect(() => {
     setLang(getSettings().nativeLanguage);
     setMounted(true);
-    // Keyboard detection via window resize
+    // Keyboard detection via visualViewport (reliable on Android Capacitor)
     initialHeightRef.current = window.innerHeight;
-    const onResize = () => {
-      setKeyboardOpen(window.innerHeight < initialHeightRef.current * 0.8);
+    const vv = window.visualViewport;
+    const onViewportResize = () => {
+      const h = vv ? vv.height : window.innerHeight;
+      setKeyboardOpen(h < initialHeightRef.current * 0.8);
     };
-    window.addEventListener("resize", onResize);
-    return () => window.removeEventListener("resize", onResize);
+    if (vv) {
+      vv.addEventListener("resize", onViewportResize);
+      return () => vv.removeEventListener("resize", onViewportResize);
+    }
+    window.addEventListener("resize", onViewportResize);
+    return () => window.removeEventListener("resize", onViewportResize);
   }, []);
 
   // ── Non-passive swipe listener ───────────────────────────────────

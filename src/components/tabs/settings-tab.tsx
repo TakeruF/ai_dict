@@ -35,7 +35,7 @@ export function SettingsTab({ lang, onLangChange }: SettingsTabProps) {
   const [settings, setSettings] = useState<AppSettings>(getSettings());
   const [showKey, setShowKey]   = useState(false);
   const [mounted, setMounted]   = useState(false);
-  const { scheduleReminder, cancelReminder, isSupported } = useLocalNotifications();
+  const { scheduleReminder, cancelReminder, requestPermission, isSupported } = useLocalNotifications();
 
   useEffect(() => { setMounted(true); }, []);
 
@@ -243,7 +243,10 @@ export function SettingsTab({ lang, onLangChange }: SettingsTabProps) {
         <div className="space-y-4">
           <Toggle
             checked={settings.reminderEnabled}
-            onChange={(v) => setSettings((s) => ({ ...s, reminderEnabled: v }))}
+            onChange={(v) => {
+              setSettings((s) => ({ ...s, reminderEnabled: v }));
+              if (v && isSupported) requestPermission(); // Ask for permission immediately on toggle-on
+            }}
             label={isEn ? "Daily study reminder" : "毎日の学習リマインダー"}
             description={isEn
               ? (isSupported ? "Sends a daily push notification at the set time" : "Notifications require the Android app")

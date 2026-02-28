@@ -102,7 +102,7 @@ export function ResourceTab() {
               <div key={hsk.level}>
                 {i > 0 && <Separator />}
                 <a
-                  href={`/hsk/${hsk.level}`}
+                  href={`/hsk/${hsk.level}/`}
                   className="flex items-start justify-between gap-4 px-4 py-3.5 hover:bg-muted/40 transition-colors group"
                 >
                   <div className="flex-1 min-w-0">

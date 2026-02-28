@@ -88,5 +88,17 @@ export function useLocalNotifications() {
     } catch {}
   }, []);
 
-  return { scheduleReminder, cancelReminder, isSupported: isCapacitor() };
+  /** Request notification permission explicitly (call on user gesture for best UX). */
+  const requestPermission = useCallback(async (): Promise<boolean> => {
+    const plugin = await getPlugin();
+    if (!plugin) return false;
+    try {
+      const perm = await plugin.requestPermissions();
+      return perm.display === "granted";
+    } catch {
+      return false;
+    }
+  }, []);
+
+  return { scheduleReminder, cancelReminder, requestPermission, isSupported: isCapacitor() };
 }
