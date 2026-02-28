@@ -157,11 +157,11 @@ function LoadingSkeleton() {
 
 type CodedError = Error & { code?: string };
 
-const BILLING_LINKS: Record<string, { labelJa: string; labelEn: string; url: string }> = {
-  anthropic: { labelJa: "Anthropic 課金ページ", labelEn: "Anthropic Billing",  url: "https://console.anthropic.com/settings/billing" },
-  gemini:    { labelJa: "Google AI Studio",     labelEn: "Google AI Studio",    url: "https://aistudio.google.com/apikey" },
-  openai:    { labelJa: "OpenAI 課金ページ",    labelEn: "OpenAI Billing",      url: "https://platform.openai.com/settings/organization/billing/overview" },
-  deepseek:  { labelJa: "DeepSeek 課金ページ",  labelEn: "DeepSeek Billing",    url: "https://platform.deepseek.com/usage" },
+const BILLING_LINKS: Record<string, { labelJa: string; labelEn: string; labelZh?: string; url: string }> = {
+  anthropic: { labelJa: "Anthropic 課金ページ", labelEn: "Anthropic Billing",  labelZh: "Anthropic 账单", url: "https://console.anthropic.com/settings/billing" },
+  gemini:    { labelJa: "Google AI Studio",     labelEn: "Google AI Studio",    labelZh: "Google AI Studio", url: "https://aistudio.google.com/apikey" },
+  openai:    { labelJa: "OpenAI 課金ページ",    labelEn: "OpenAI Billing",      labelZh: "OpenAI 账单", url: "https://platform.openai.com/settings/organization/billing/overview" },
+  deepseek:  { labelJa: "DeepSeek 課金ページ",  labelEn: "DeepSeek Billing",    labelZh: "DeepSeek 账单", url: "https://platform.deepseek.com/usage" },
 };
 
 function ErrorCard({
@@ -212,14 +212,14 @@ function ErrorCard({
           <div className="flex flex-wrap gap-2 mt-3">
             {showSettingsBtn && (
               <Button size="sm" variant="outline" className="text-xs" onClick={() => onNavigate("settings")}>
-                {isEn ? "Open Settings" : "設定を開く"}
+                {isEn ? "Open Settings" : isZh ? "打开设置" : "設定を開く"}
               </Button>
             )}
             {isBillingError && billingLink && (
               <Button size="sm" variant="outline" className="text-xs gap-1.5" asChild>
                 <a href={billingLink.url} target="_blank" rel="noopener noreferrer">
                   <CreditCard className="h-3 w-3" />
-                  {isEn ? billingLink.labelEn : billingLink.labelJa}
+                  {isEn ? billingLink.labelEn : isZh ? billingLink.labelZh ?? billingLink.labelEn : billingLink.labelJa}
                 </a>
               </Button>
             )}

@@ -24,9 +24,18 @@ const HSK_COLORS: Record<number, string> = {
   6: "bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400",
 };
 
+// JLPT colors (N5 easiest → N1 hardest, but stored as 5→1)
+const JLPT_COLORS: Record<number, string> = {
+  5: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400", // N5
+  4: "bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-400",                 // N4
+  3: "bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400",     // N3
+  2: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",         // N2
+  1: "bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400",             // N1
+};
+
 /** Backward-compat: old entries stored translation in the 'japanese' field */
 function getTranslation(ex: ExampleSentence): string {
-  return ex.translation ?? (ex as ExampleSentence & { japanese?: string }).japanese ?? "";
+  return ex.translation ?? "";
 }
 
 export function DictEntryCard({ entry, lang = "ja", onAddFlashcard, compact = false }: Props) {
@@ -37,12 +46,15 @@ export function DictEntryCard({ entry, lang = "ja", onAddFlashcard, compact = fa
   const isEn = lang === "en";
   const isZh = lang === "zh";
 
+  // For Chinese speakers learning Japanese, TTS should speak Japanese
+  // For others learning Chinese, TTS speaks Chinese
   const handleTTS = useCallback(async () => {
     if (isPlaying) return;
     setIsPlaying(true);
     try {
-      const utterance = new SpeechSynthesisUtterance(entry.simplified);
-      utterance.lang = "zh-CN";
+      const textToSpeak = isZh && entry.japanese ? entry.japanese : entry.simplified;
+      const utterance = new SpeechSynthesisUtterance(textToSpeak);
+      utterance.lang = isZh && entry.japanese ? "ja-JP" : "zh-CN";
       utterance.rate = 0.85;
       utterance.onend = () => setIsPlaying(false);
       utterance.onerror = () => setIsPlaying(false);
@@ -50,7 +62,7 @@ export function DictEntryCard({ entry, lang = "ja", onAddFlashcard, compact = fa
     } catch {
       setIsPlaying(false);
     }
-  }, [entry.simplified, isPlaying]);
+  }, [entry.simplified, entry.japanese, isPlaying, isZh]);
 
   const displayedExamples = showAllExamples
     ? entry.exampleSentences
@@ -63,48 +75,85 @@ export function DictEntryCard({ entry, lang = "ja", onAddFlashcard, compact = fa
         <div className="p-6 pb-4">
           <div className="flex items-start justify-between gap-4">
             <div className="flex-1 min-w-0">
-              {/* Character + Traditional toggle */}
-              <div className="flex items-end gap-3 flex-wrap">
-                <button
-                  onClick={() => setShowTraditional((s) => !s)}
-                  className="char-display text-5xl font-bold tracking-wide text-foreground hover:text-primary transition-colors leading-none"
-                  title={isEn
-                    ? (showTraditional ? "Show simplified" : "Show traditional")
-                    : (showTraditional ? "簡体字を表示" : "繁体字を表示")}
-                >
-                  {showTraditional ? entry.traditional : entry.simplified}
-                </button>
-                {entry.simplified !== entry.traditional && (
-                  <Badge
-                    variant="outline"
-                    className="text-[10px] mb-1 cursor-pointer select-none"
-                    onClick={() => setShowTraditional((s) => !s)}
-                  >
-                    {showTraditional ? "繁" : "簡"}
-                  </Badge>
-                )}
-              </div>
+              {/* For Chinese speakers: Japanese is primary */}
+              {isZh && entry.japanese ? (
+                <>
+                  {/* Japanese word (PRIMARY for Chinese learners) */}
+                  <div className="flex items-end gap-3 flex-wrap">
+                    <span className="char-display text-5xl font-bold tracking-wide text-foreground leading-none">
+                      {entry.japanese}
+                    </span>
+                  </div>
 
-              {/* Pinyin */}
-              <p className="mt-2 text-lg text-muted-foreground font-light tracking-widest">
-                {entry.pinyin}
-              </p>
+                  {/* Reading: hiragana + romaji */}
+                  <div className="mt-2 space-y-0.5">
+                    {entry.reading && (
+                      <p className="text-lg text-muted-foreground font-light tracking-widest">
+                        {entry.reading}
+                      </p>
+                    )}
+                    {entry.romanized && (
+                      <p className="text-sm text-muted-foreground font-light">
+                        {entry.romanized}
+                      </p>
+                    )}
+                  </div>
 
-              {/* Japanese equivalent & romanization (for Chinese learners) */}
-              {isZh && entry.japanese && (
-                <div className="mt-3 space-y-1">
-                  <p className="text-sm font-medium text-foreground">
-                    日本語：{entry.japanese}
-                  </p>
-                  {entry.romanized && (
-                    <p className="text-sm text-muted-foreground font-light">
-                      ローマ字：{entry.romanized}
+                  {/* Chinese translation (secondary) */}
+                  <div className="mt-3 space-y-1">
+                    <p className="text-sm text-foreground/80">
+                      <span className="text-muted-foreground">中文：</span>
+                      <button
+                        onClick={() => setShowTraditional((s) => !s)}
+                        className="hover:text-primary transition-colors"
+                        title={showTraditional ? "显示简体" : "显示繁体"}
+                      >
+                        {showTraditional ? entry.traditional : entry.simplified}
+                      </button>
+                      {entry.simplified !== entry.traditional && (
+                        <Badge
+                          variant="outline"
+                          className="text-[10px] ml-2 cursor-pointer select-none"
+                          onClick={() => setShowTraditional((s) => !s)}
+                        >
+                          {showTraditional ? "繁" : "简"}
+                        </Badge>
+                      )}
                     </p>
-                  )}
-                </div>
+                  </div>
+                </>
+              ) : (
+                <>
+                  {/* For non-Chinese speakers: Chinese is primary */}
+                  <div className="flex items-end gap-3 flex-wrap">
+                    <button
+                      onClick={() => setShowTraditional((s) => !s)}
+                      className="char-display text-5xl font-bold tracking-wide text-foreground hover:text-primary transition-colors leading-none"
+                      title={isEn
+                        ? (showTraditional ? "Show simplified" : "Show traditional")
+                        : (showTraditional ? "簡体字を表示" : "繁体字を表示")}
+                    >
+                      {showTraditional ? entry.traditional : entry.simplified}
+                    </button>
+                    {entry.simplified !== entry.traditional && (
+                      <Badge
+                        variant="outline"
+                        className="text-[10px] mb-1 cursor-pointer select-none"
+                        onClick={() => setShowTraditional((s) => !s)}
+                      >
+                        {showTraditional ? "繁" : "簡"}
+                      </Badge>
+                    )}
+                  </div>
+
+                  {/* Pinyin */}
+                  <p className="mt-2 text-lg text-muted-foreground font-light tracking-widest">
+                    {entry.pinyin}
+                  </p>
+                </>
               )}
 
-              {/* Part of speech */}
+              {/* Part of speech + Level badges */}
               <div className="flex flex-wrap gap-1.5 mt-3">
                 {entry.partOfSpeech.map((pos) => (
                   <Badge
@@ -115,7 +164,15 @@ export function DictEntryCard({ entry, lang = "ja", onAddFlashcard, compact = fa
                     {pos}
                   </Badge>
                 ))}
-                {entry.hskLevel && (
+                {/* Show JLPT for Chinese speakers, HSK for others */}
+                {isZh && entry.jlptLevel && (
+                  <Badge
+                    className={`text-xs font-normal border-0 ${JLPT_COLORS[entry.jlptLevel] ?? ""}`}
+                  >
+                    JLPT N{entry.jlptLevel === 5 ? 5 : entry.jlptLevel === 4 ? 4 : entry.jlptLevel === 3 ? 3 : entry.jlptLevel === 2 ? 2 : 1}
+                  </Badge>
+                )}
+                {!isZh && entry.hskLevel && (
                   <Badge
                     className={`text-xs font-normal border-0 ${HSK_COLORS[entry.hskLevel] ?? ""}`}
                   >
@@ -197,9 +254,21 @@ export function DictEntryCard({ entry, lang = "ja", onAddFlashcard, compact = fa
           <div className="space-y-4">
             {displayedExamples.map((ex, i) => (
               <div key={i} className="space-y-0.5">
-                <p className="text-sm char-display text-foreground">{ex.chinese}</p>
-                {ex.pinyin && <p className="text-xs text-muted-foreground">{ex.pinyin}</p>}
-                <p className="text-sm text-foreground/80 mt-1">{getTranslation(ex)}</p>
+                {/* For Chinese speakers: Japanese example sentences */}
+                {isZh && ex.japanese ? (
+                  <>
+                    <p className="text-sm char-display text-foreground">{ex.japanese}</p>
+                    {ex.reading && <p className="text-xs text-muted-foreground">{ex.reading}</p>}
+                    <p className="text-sm text-foreground/80 mt-1">{getTranslation(ex)}</p>
+                  </>
+                ) : (
+                  <>
+                    {/* For others: Chinese example sentences */}
+                    <p className="text-sm char-display text-foreground">{ex.chinese}</p>
+                    {ex.pinyin && <p className="text-xs text-muted-foreground">{ex.pinyin}</p>}
+                    <p className="text-sm text-foreground/80 mt-1">{getTranslation(ex)}</p>
+                  </>
+                )}
               </div>
             ))}
           </div>

@@ -10,9 +10,15 @@ export type NativeLanguage = "en" | "ja" | "zh";
 export type DictionaryDirection = "zh-ja" | "zh-en" | "ja-zh" | "en-zh";
 
 export interface ExampleSentence {
-  chinese: string;
-  pinyin?: string;   // Optional: not needed for Chinese native speakers (they know Chinese pronunciation)
-  translation: string; // Japanese for JA users, English for EN users, or explanation for ZH users
+  // For Chinese/English learning dictionaries (Chinese example sentences)
+  chinese?: string;
+  pinyin?: string;   // Optional: not needed for Chinese native speakers
+  
+  // For Japanese learning dictionaries (Japanese example sentences)
+  japanese?: string;
+  reading?: string;  // Hiragana reading of Japanese sentence
+  
+  translation: string; // Japanese for JA users, English for EN users, Chinese for ZH users
 }
 
 export interface DictionaryEntry {
@@ -23,10 +29,12 @@ export interface DictionaryEntry {
   definitions: string[];
   exampleSentences: ExampleSentence[];
   usageNote: string;
-  hskLevel?: number;
+  hskLevel?: number;      // HSK level 1-6 (for Chinese learning)
+  jlptLevel?: number;     // JLPT level 1-5 (for Japanese learning, where N5=5, N1=1)
   audioUrl?: string;
-  romanized?: string;   // Romanization (hiragana/romaji for Japanese, or IPA for other languages)
-  japanese?: string;    // Japanese expression/translation (for Chinese learners)
+  romanized?: string;     // Romanization (romaji for Japanese)
+  japanese?: string;      // Japanese word (kanji/kana) - primary for Japanese learning
+  reading?: string;       // Hiragana reading of the Japanese word
 }
 
 export interface SearchHistoryItem {

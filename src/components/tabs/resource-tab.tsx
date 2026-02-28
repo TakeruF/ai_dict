@@ -424,6 +424,8 @@ function HskSheet({ level, label, direction, onClose }: { level: number; label: 
 export function ResourceTab({ lang, direction, isNative = false }: { lang: NativeLanguage; direction: DictionaryDirection; isNative?: boolean }) {
   const [openLevel, setOpenLevel] = useState<{ level: number; label: string } | null>(null);
   
+  const isZh = lang === "zh";
+  
   // Only zh-ja and zh-en directions have HSK materials
   const hasHsk = direction === "zh-ja" || direction === "zh-en";
   const isZhEn = direction === "zh-en";
@@ -444,12 +446,29 @@ export function ResourceTab({ lang, direction, isNative = false }: { lang: Nativ
   } else if (direction === "ja-zh") {
     resources = RESOURCES_JA_ZH;
     tagStyle = TAG_STYLE_JA_ZH;
-    sectionTitle = "日本語学習";
+    sectionTitle = isZh ? "日语学习资源" : "日本語学習";
   } else {
     // direction === "en-zh"
     resources = RESOURCES_EN_ZH;
     tagStyle = TAG_STYLE_EN_ZH;
     sectionTitle = "English Learning";
+  }
+
+  // For Chinese speakers learning Japanese: show "under development" placeholder
+  if (isZh) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 gap-4 text-center">
+        <div className="w-16 h-16 rounded-2xl bg-muted/60 flex items-center justify-center">
+          <span className="text-2xl">🚧</span>
+        </div>
+        <div>
+          <p className="text-sm font-medium text-foreground">开发中</p>
+          <p className="text-xs text-muted-foreground mt-1">
+            日语学习资源正在准备中，敬请期待
+          </p>
+        </div>
+      </div>
+    );
   }
 
   return (
