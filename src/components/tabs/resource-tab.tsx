@@ -49,7 +49,7 @@ const RESOURCES: ResourceSection[] = [
       },
       {
         title: "Moji辞書",
-        description: "日本語インターフェースの中国語辞書。例文・発音・コロケーション充実",
+        description: "中国語インターフェースの日本語辞書。例文・発音・コロケーション充実",
         url: "https://www.mojidict.com/",
         tags: ["辞書", "アプリ"],
       },
@@ -59,7 +59,7 @@ const RESOURCES: ResourceSection[] = [
     heading: "HSK 対策",
     items: [
       {
-        title: "HSKJ（HSK日本委員会）",
+        title: "HSKJ（HSK日本公式サイト）",
         description: "HSK試験の公式情報・申込・対策資料をまとめた日本語サイト",
         url: "https://www.hskj.jp/",
         tags: ["HSK"],
