@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import { DICTIONARY_SYSTEM_PROMPT, buildUserPrompt } from "@/lib/prompt";
-import { DictionaryEntry } from "@/types/dictionary";
+import { getSystemPrompt, buildUserPrompt } from "@/lib/prompt";
+import { DictionaryEntry, NativeLanguage } from "@/types/dictionary";
 
 // ── Type guard ─────────────────────────────────────────────────────
 function isValidEntry(data: unknown): data is DictionaryEntry {
@@ -45,12 +45,12 @@ function sanitizeKey(key: string): string {
 }
 
 // ── Provider implementations ───────────────────────────────────────
-async function callAnthropic(query: string, apiKey: string): Promise<string> {
+async function callAnthropic(query: string, apiKey: string, systemPrompt: string): Promise<string> {
   const client = new Anthropic({ apiKey });
   const message = await client.messages.create({
     model: "claude-sonnet-4-6",
     max_tokens: 1024,
-    system: DICTIONARY_SYSTEM_PROMPT,
+    system: systemPrompt,
     messages: [{ role: "user", content: buildUserPrompt(query) }],
   });
   return message.content
@@ -66,6 +66,7 @@ async function callOpenAICompat(
   baseUrl: string,
   model: string,
   providerLabel: string,
+  systemPrompt: string,
   jsonMode = true,
   extraHeaders: Record<string, string> = {},
 ): Promise<string> {
@@ -80,7 +81,7 @@ async function callOpenAICompat(
       model,
       max_tokens: 1024,
       messages: [
-        { role: "system", content: DICTIONARY_SYSTEM_PROMPT },
+        { role: "system", content: systemPrompt },
         { role: "user", content: buildUserPrompt(query) },
       ],
       ...(jsonMode ? { response_format: { type: "json_object" } } : {}),
@@ -95,28 +96,28 @@ async function callOpenAICompat(
   return data.choices?.[0]?.message?.content ?? "";
 }
 
-const callOpenAI = (query: string, apiKey: string) =>
-  callOpenAICompat(query, apiKey, "https://api.openai.com/v1", "gpt-4o", "OpenAI");
+const callOpenAI = (query: string, apiKey: string, systemPrompt: string) =>
+  callOpenAICompat(query, apiKey, "https://api.openai.com/v1", "gpt-4o", "OpenAI", systemPrompt);
 
-const callDeepSeek = (query: string, apiKey: string) =>
-  callOpenAICompat(query, apiKey, "https://api.deepseek.com/v1", "deepseek-chat", "DeepSeek");
+const callDeepSeek = (query: string, apiKey: string, systemPrompt: string) =>
+  callOpenAICompat(query, apiKey, "https://api.deepseek.com/v1", "deepseek-chat", "DeepSeek", systemPrompt);
 
-const callOpenRouter = (query: string, apiKey: string) =>
+const callOpenRouter = (query: string, apiKey: string, systemPrompt: string) =>
   callOpenAICompat(
     query, apiKey,
     "https://openrouter.ai/api/v1",
     "stepfun/step-3.5-flash:free",
     "OpenRouter",
+    systemPrompt,
     false,
-    { "HTTP-Referer": "https://ai-dict.vercel.app", "X-Title": "Chinese-Japanese AI Dictionary" },
+    { "HTTP-Referer": "https://ai-dict.vercel.app", "X-Title": "Chinese AI Dictionary" },
   );
 
-async function callGemini(query: string, apiKey: string): Promise<string> {
+async function callGemini(query: string, apiKey: string, systemPrompt: string): Promise<string> {
   const genAI = new GoogleGenerativeAI(apiKey);
-  // gemini-2.5-flash: gemini-2.0-flash-lite was deprecated (0/0 free-tier quota)
   const model = genAI.getGenerativeModel({
     model: "gemini-2.5-flash",
-    systemInstruction: DICTIONARY_SYSTEM_PROMPT,
+    systemInstruction: systemPrompt,
     generationConfig: {
       responseMimeType: "application/json",
       maxOutputTokens: 1024,
@@ -172,6 +173,7 @@ export async function POST(req: NextRequest) {
     const query: string = (body.query ?? "").trim();
     const rawKey: string = body.apiKey ?? "";
     const provider: string = body.provider ?? "anthropic";
+    const nativeLanguage: NativeLanguage = body.nativeLanguage === "en" ? "en" : "ja";
 
     if (!query) {
       return NextResponse.json({ error: "empty_query" }, { status: 400 });
@@ -184,17 +186,19 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "missing_api_key" }, { status: 401 });
     }
 
+    const systemPrompt = getSystemPrompt(nativeLanguage);
+
     let raw: string;
     if (provider === "gemini") {
-      raw = await callGemini(query, apiKey);
+      raw = await callGemini(query, apiKey, systemPrompt);
     } else if (provider === "openai") {
-      raw = await callOpenAI(query, apiKey);
+      raw = await callOpenAI(query, apiKey, systemPrompt);
     } else if (provider === "deepseek") {
-      raw = await callDeepSeek(query, apiKey);
+      raw = await callDeepSeek(query, apiKey, systemPrompt);
     } else if (provider === "openrouter") {
-      raw = await callOpenRouter(query, apiKey);
+      raw = await callOpenRouter(query, apiKey, systemPrompt);
     } else {
-      raw = await callAnthropic(query, apiKey);
+      raw = await callAnthropic(query, apiKey, systemPrompt);
     }
 
     let parsed: unknown;

@@ -1,6 +1,6 @@
 "use client";
 
-import { DictionaryEntry, FlashCard, FlashCardResult, SearchHistoryItem } from "@/types/dictionary";
+import { DictionaryEntry, FlashCard, FlashCardResult, NativeLanguage, SearchHistoryItem } from "@/types/dictionary";
 
 // ── LocalStorage keys ──────────────────────────────────────────────
 const KEYS = {
@@ -125,6 +125,9 @@ export interface AppSettings {
   provider: "anthropic" | "openai" | "gemini" | "deepseek" | "openrouter";
   theme: "light" | "dark" | "system";
   autoAddToFlashcards: boolean;
+  nativeLanguage: NativeLanguage | null; // null = not yet chosen (first run)
+  reminderEnabled: boolean;
+  reminderTime: string; // "HH:MM" e.g. "20:00"
 }
 
 const DEFAULT_SETTINGS: AppSettings = {
@@ -132,6 +135,9 @@ const DEFAULT_SETTINGS: AppSettings = {
   provider: "anthropic",
   theme: "system",
   autoAddToFlashcards: true,
+  nativeLanguage: null,
+  reminderEnabled: false,
+  reminderTime: "20:00",
 };
 
 export function getSettings(): AppSettings {

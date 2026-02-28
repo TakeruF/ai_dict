@@ -6,10 +6,11 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { DictionaryEntry } from "@/types/dictionary";
+import { DictionaryEntry, ExampleSentence, NativeLanguage } from "@/types/dictionary";
 
 interface Props {
   entry: DictionaryEntry;
+  lang?: NativeLanguage;
   onAddFlashcard?: () => void;
   compact?: boolean; // for history view
 }
@@ -23,10 +24,17 @@ const HSK_COLORS: Record<number, string> = {
   6: "bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400",
 };
 
-export function DictEntryCard({ entry, onAddFlashcard, compact = false }: Props) {
+/** Backward-compat: old entries stored translation in the 'japanese' field */
+function getTranslation(ex: ExampleSentence): string {
+  return ex.translation ?? (ex as ExampleSentence & { japanese?: string }).japanese ?? "";
+}
+
+export function DictEntryCard({ entry, lang = "ja", onAddFlashcard, compact = false }: Props) {
   const [showTraditional, setShowTraditional] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [showAllExamples, setShowAllExamples] = useState(!compact);
+
+  const isEn = lang === "en";
 
   const handleTTS = useCallback(async () => {
     if (isPlaying) return;
@@ -59,7 +67,9 @@ export function DictEntryCard({ entry, onAddFlashcard, compact = false }: Props)
                 <button
                   onClick={() => setShowTraditional((s) => !s)}
                   className="char-display text-5xl font-bold tracking-wide text-foreground hover:text-primary transition-colors leading-none"
-                  title={showTraditional ? "簡体字を表示" : "繁体字を表示"}
+                  title={isEn
+                    ? (showTraditional ? "Show simplified" : "Show traditional")
+                    : (showTraditional ? "簡体字を表示" : "繁体字を表示")}
                 >
                   {showTraditional ? entry.traditional : entry.simplified}
                 </button>
@@ -108,7 +118,7 @@ export function DictEntryCard({ entry, onAddFlashcard, compact = false }: Props)
                 className="h-9 w-9 rounded-full border-border/60"
                 onClick={handleTTS}
                 disabled={isPlaying}
-                title="発音を聞く"
+                title={isEn ? "Listen" : "発音を聞く"}
               >
                 {isPlaying ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
@@ -122,7 +132,7 @@ export function DictEntryCard({ entry, onAddFlashcard, compact = false }: Props)
                   variant="outline"
                   className="h-9 w-9 rounded-full border-border/60"
                   onClick={onAddFlashcard}
-                  title="フラッシュカードに追加"
+                  title={isEn ? "Add flashcard" : "フラッシュカードに追加"}
                 >
                   <BookmarkPlus className="h-4 w-4" />
                 </Button>
@@ -136,7 +146,7 @@ export function DictEntryCard({ entry, onAddFlashcard, compact = false }: Props)
         {/* ── Definitions ───────────────────────────── */}
         <div className="px-6 py-4">
           <h3 className="text-[11px] uppercase tracking-widest text-muted-foreground mb-3 font-medium">
-            意味
+            {isEn ? "Meaning" : "意味"}
           </h3>
           <ol className="space-y-1.5">
             {entry.definitions.map((def, i) => (
@@ -154,7 +164,7 @@ export function DictEntryCard({ entry, onAddFlashcard, compact = false }: Props)
         <div className="px-6 py-4">
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-[11px] uppercase tracking-widest text-muted-foreground font-medium">
-              例文
+              {isEn ? "Examples" : "例文"}
             </h3>
             {compact && (
               <button
@@ -162,9 +172,9 @@ export function DictEntryCard({ entry, onAddFlashcard, compact = false }: Props)
                 className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
               >
                 {showAllExamples ? (
-                  <><ChevronUp className="h-3.5 w-3.5" /> 折りたたむ</>
+                  <><ChevronUp className="h-3.5 w-3.5" />{isEn ? "Collapse" : "折りたたむ"}</>
                 ) : (
-                  <><ChevronDown className="h-3.5 w-3.5" /> すべて表示</>
+                  <><ChevronDown className="h-3.5 w-3.5" />{isEn ? "Show all" : "すべて表示"}</>
                 )}
               </button>
             )}
@@ -174,7 +184,7 @@ export function DictEntryCard({ entry, onAddFlashcard, compact = false }: Props)
               <div key={i} className="space-y-0.5">
                 <p className="text-sm char-display text-foreground">{ex.chinese}</p>
                 <p className="text-xs text-muted-foreground">{ex.pinyin}</p>
-                <p className="text-sm text-foreground/80 mt-1">{ex.japanese}</p>
+                <p className="text-sm text-foreground/80 mt-1">{getTranslation(ex)}</p>
               </div>
             ))}
           </div>
@@ -185,7 +195,7 @@ export function DictEntryCard({ entry, onAddFlashcard, compact = false }: Props)
         {/* ── Usage note ────────────────────────────── */}
         <div className="px-6 py-4 bg-muted/30 rounded-b-2xl">
           <h3 className="text-[11px] uppercase tracking-widest text-muted-foreground mb-2 font-medium">
-            使い方のヒント
+            {isEn ? "Usage Note" : "使い方のヒント"}
           </h3>
           <p className="text-sm leading-relaxed text-foreground/80">{entry.usageNote}</p>
         </div>

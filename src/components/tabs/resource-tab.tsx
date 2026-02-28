@@ -1,6 +1,6 @@
 "use client";
 
-import { ExternalLink, ChevronRight } from "lucide-react";
+import { ExternalLink } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
@@ -103,8 +103,6 @@ export function ResourceTab() {
                 {i > 0 && <Separator />}
                 <a
                   href={`/hsk/${hsk.level}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
                   className="flex items-start justify-between gap-4 px-4 py-3.5 hover:bg-muted/40 transition-colors group"
                 >
                   <div className="flex-1 min-w-0">

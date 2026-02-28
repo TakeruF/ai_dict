@@ -6,7 +6,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { DictionaryEntry, FlashCard, FlashCardResult } from "@/types/dictionary";
+import { DictionaryEntry, FlashCard, FlashCardResult, NativeLanguage } from "@/types/dictionary";
 import { addFlashCard, getFlashCards, reviewFlashCard, removeFlashCard } from "@/lib/store";
 import { toast } from "sonner";
 
@@ -62,10 +62,12 @@ function buildQuestions(pool: QuizWord[], count: number): QuizQuestion[] {
 
 interface QuizRunnerProps {
   questions: QuizQuestion[];
+  lang: NativeLanguage;
   onComplete: (score: number, wrong: QuizQuestion[]) => void;
 }
 
-function QuizRunner({ questions, onComplete }: QuizRunnerProps) {
+function QuizRunner({ questions, lang, onComplete }: QuizRunnerProps) {
+  const isEn = lang === "en";
   const [idx, setIdx] = useState(0);
   const [selected, setSelected] = useState<number | null>(null);
   const [results, setResults] = useState<boolean[]>([]);
@@ -137,7 +139,7 @@ function QuizRunner({ questions, onComplete }: QuizRunnerProps) {
             className="text-xs text-muted-foreground/50 hover:text-muted-foreground transition-colors inline-flex items-center gap-1 mt-1"
           >
             <Volume2 className="h-3 w-3" />
-            発音
+            {isEn ? "Listen" : "発音"}
           </button>
         </CardContent>
       </Card>
@@ -160,7 +162,9 @@ function QuizRunner({ questions, onComplete }: QuizRunnerProps) {
 
       {isAnswered && (
         <Button onClick={handleNext} className="w-full">
-          {idx + 1 >= questions.length ? "結果を見る" : "次の問題"}
+          {idx + 1 >= questions.length
+            ? (isEn ? "See results" : "結果を見る")
+            : (isEn ? "Next" : "次の問題")}
           <ChevronRight className="h-4 w-4 ml-1" />
         </Button>
       )}
@@ -176,12 +180,14 @@ interface QuizResultProps {
   score: number;
   total: number;
   wrong: QuizQuestion[];
+  lang: NativeLanguage;
   onRestart: () => void;
   onBack: () => void;
   onAddToSrs?: () => void;
 }
 
-function QuizResult({ score, total, wrong, onRestart, onBack, onAddToSrs }: QuizResultProps) {
+function QuizResult({ score, total, wrong, lang, onRestart, onBack, onAddToSrs }: QuizResultProps) {
+  const isEn = lang === "en";
   const [srsAdded, setSrsAdded] = useState(false);
   const pct = Math.round((score / total) * 100);
   const emoji = pct >= 80 ? "🎉" : pct >= 50 ? "💪" : "📚";
@@ -195,7 +201,9 @@ function QuizResult({ score, total, wrong, onRestart, onBack, onAddToSrs }: Quiz
             {score}
             <span className="text-muted-foreground text-xl font-normal"> / {total}</span>
           </p>
-          <p className="text-sm text-muted-foreground mt-1">{pct}% 正解</p>
+          <p className="text-sm text-muted-foreground mt-1">
+            {pct}% {isEn ? "correct" : "正解"}
+          </p>
         </CardContent>
       </Card>
 
@@ -203,7 +211,7 @@ function QuizResult({ score, total, wrong, onRestart, onBack, onAddToSrs }: Quiz
         <div>
           <div className="flex items-center justify-between mb-2">
             <p className="text-xs text-muted-foreground font-medium uppercase tracking-widest">
-              間違えた単語
+              {isEn ? "Missed words" : "間違えた単語"}
             </p>
             {onAddToSrs && (
               <button
@@ -216,7 +224,9 @@ function QuizResult({ score, total, wrong, onRestart, onBack, onAddToSrs }: Quiz
                 }`}
               >
                 <Brain className="h-3 w-3" />
-                {srsAdded ? "SRS追加済み" : "SRSに追加"}
+                {srsAdded
+                  ? (isEn ? "Added to SRS" : "SRS追加済み")
+                  : (isEn ? "Add to SRS" : "SRSに追加")}
               </button>
             )}
           </div>
@@ -242,10 +252,10 @@ function QuizResult({ score, total, wrong, onRestart, onBack, onAddToSrs }: Quiz
       <div className="flex gap-2">
         <Button variant="outline" className="flex-1" onClick={onBack}>
           <RotateCcw className="h-3.5 w-3.5 mr-1.5" />
-          設定に戻る
+          {isEn ? "Back" : "設定に戻る"}
         </Button>
         <Button className="flex-1" onClick={onRestart}>
-          もう一度
+          {isEn ? "Try again" : "もう一度"}
           <ChevronRight className="h-3.5 w-3.5 ml-1.5" />
         </Button>
       </div>
@@ -260,8 +270,12 @@ function QuizResult({ score, total, wrong, onRestart, onBack, onAddToSrs }: Quiz
 const HSK_LABEL: Record<number, string> = {
   1: "入門", 2: "初級", 3: "初中級", 4: "中級", 5: "中上級", 6: "上級",
 };
+const HSK_LABEL_EN: Record<number, string> = {
+  1: "Beginner", 2: "Elementary", 3: "Pre-Int.", 4: "Intermediate", 5: "Upper-Int.", 6: "Advanced",
+};
 
-function HskQuizSection() {
+function HskQuizSection({ lang }: { lang: NativeLanguage }) {
+  const isEn = lang === "en";
   const [view, setView] = useState<"setup" | "loading" | "quiz" | "result">("setup");
   const [level, setLevel] = useState(1);
   const [count, setCount] = useState(10);
@@ -270,6 +284,7 @@ function HskQuizSection() {
   const [wrongQ, setWrongQ] = useState<QuizQuestion[]>([]);
   const [error, setError] = useState<string | null>(null);
 
+  // For English users: HSK CSV answer column is in Japanese — show a note
   const startQuiz = async () => {
     setView("loading");
     setError(null);
@@ -281,14 +296,16 @@ function HskQuizSection() {
       setQuestions(buildQuestions(pool, count));
       setView("quiz");
     } catch {
-      setError("CSVの読み込みに失敗しました");
+      setError(isEn ? "Failed to load word list." : "CSVの読み込みに失敗しました");
       setView("setup");
     }
   };
 
   if (view === "loading") {
     return (
-      <div className="text-center py-16 text-sm text-muted-foreground">読み込み中...</div>
+      <div className="text-center py-16 text-sm text-muted-foreground">
+        {isEn ? "Loading..." : "読み込み中..."}
+      </div>
     );
   }
 
@@ -296,6 +313,7 @@ function HskQuizSection() {
     return (
       <QuizRunner
         questions={questions}
+        lang={lang}
         onComplete={(s, w) => { setFinalScore(s); setWrongQ(w); setView("result"); }}
       />
     );
@@ -315,7 +333,11 @@ function HskQuizSection() {
       };
       addFlashCard(entry);
     });
-    toast.success(`${wrongQ.length} 語をSRSに追加しました`);
+    toast.success(
+      isEn
+        ? `Added ${wrongQ.length} words to SRS`
+        : `${wrongQ.length} 語をSRSに追加しました`
+    );
   };
 
   if (view === "result") {
@@ -324,6 +346,7 @@ function HskQuizSection() {
         score={finalScore}
         total={questions.length}
         wrong={wrongQ}
+        lang={lang}
         onRestart={startQuiz}
         onBack={() => setView("setup")}
         onAddToSrs={wrongQ.length > 0 ? handleAddToSrs : undefined}
@@ -334,9 +357,14 @@ function HskQuizSection() {
   // Setup screen
   return (
     <div className="flex flex-col gap-5">
+      {isEn && (
+        <p className="text-xs text-muted-foreground bg-muted/40 rounded-xl px-3 py-2">
+          Note: HSK word list answers are in Japanese. Use <strong>My Words</strong> quiz for English definitions.
+        </p>
+      )}
       <div>
         <p className="text-xs font-medium text-muted-foreground uppercase tracking-widest mb-2">
-          レベル
+          {isEn ? "Level" : "レベル"}
         </p>
         <div className="grid grid-cols-3 gap-2">
           {[1, 2, 3, 4, 5, 6].map((l) => (
@@ -351,7 +379,7 @@ function HskQuizSection() {
             >
               <span className="font-medium">HSK {l}</span>
               <span className={`text-[10px] ${level === l ? "opacity-80" : "text-muted-foreground"}`}>
-                {HSK_LABEL[l]}
+                {isEn ? HSK_LABEL_EN[l] : HSK_LABEL[l]}
               </span>
             </button>
           ))}
@@ -360,7 +388,7 @@ function HskQuizSection() {
 
       <div>
         <p className="text-xs font-medium text-muted-foreground uppercase tracking-widest mb-2">
-          問題数
+          {isEn ? "Questions" : "問題数"}
         </p>
         <div className="grid grid-cols-3 gap-2">
           {[10, 20, 30].map((c) => (
@@ -373,7 +401,7 @@ function HskQuizSection() {
                   : "border-border hover:bg-muted/40"
               }`}
             >
-              {c} 問
+              {isEn ? `${c} Q` : `${c} 問`}
             </button>
           ))}
         </div>
@@ -382,7 +410,7 @@ function HskQuizSection() {
       {error && <p className="text-xs text-destructive">{error}</p>}
 
       <Button onClick={startQuiz} size="lg" className="w-full">
-        クイズを開始
+        {isEn ? "Start Quiz" : "クイズを開始"}
         <ChevronRight className="h-4 w-4 ml-1" />
       </Button>
     </div>
@@ -393,7 +421,8 @@ function HskQuizSection() {
 // WordsQuizSection
 // ─────────────────────────────────────────────────────────────────────
 
-function WordsQuizSection() {
+function WordsQuizSection({ lang }: { lang: NativeLanguage }) {
+  const isEn = lang === "en";
   const [view, setView] = useState<"setup" | "quiz" | "result">("setup");
   const [count, setCount] = useState(10);
   const [questions, setQuestions] = useState<QuizQuestion[]>([]);
@@ -421,11 +450,13 @@ function WordsQuizSection() {
           <Star className="h-6 w-6 text-muted-foreground/60" />
         </div>
         <div>
-          <p className="text-sm font-medium">単語が足りません</p>
+          <p className="text-sm font-medium">
+            {isEn ? "Not enough words" : "単語が足りません"}
+          </p>
           <p className="text-xs text-muted-foreground mt-1">
-            クイズには最低4語が必要です（現在 {pool.length} 語）
-            <br />
-            検索タブで単語を調べて追加してください
+            {isEn
+              ? `Need at least 4 words (you have ${pool.length}). Search for words to add them.`
+              : `クイズには最低4語が必要です（現在 ${pool.length} 語）\n検索タブで単語を調べて追加してください`}
           </p>
         </div>
       </div>
@@ -436,6 +467,7 @@ function WordsQuizSection() {
     return (
       <QuizRunner
         questions={questions}
+        lang={lang}
         onComplete={(s, w) => { setFinalScore(s); setWrongQ(w); setView("result"); }}
       />
     );
@@ -447,6 +479,7 @@ function WordsQuizSection() {
         score={finalScore}
         total={questions.length}
         wrong={wrongQ}
+        lang={lang}
         onRestart={startQuiz}
         onBack={() => setView("setup")}
       />
@@ -460,14 +493,18 @@ function WordsQuizSection() {
   return (
     <div className="flex flex-col gap-5">
       <div className="flex items-center justify-between text-sm px-1">
-        <span className="text-muted-foreground">利用可能な単語</span>
-        <span className="font-medium">{pool.length} 語</span>
+        <span className="text-muted-foreground">
+          {isEn ? "Available words" : "利用可能な単語"}
+        </span>
+        <span className="font-medium">
+          {pool.length} {isEn ? "words" : "語"}
+        </span>
       </div>
 
       {availableCounts.length > 1 && (
         <div>
           <p className="text-xs font-medium text-muted-foreground uppercase tracking-widest mb-2">
-            問題数
+            {isEn ? "Questions" : "問題数"}
           </p>
           <div className="grid grid-cols-3 gap-2">
             {availableCounts.map((c) => (
@@ -480,7 +517,7 @@ function WordsQuizSection() {
                     : "border-border hover:bg-muted/40"
                 }`}
               >
-                {c} 問
+                {isEn ? `${c} Q` : `${c} 問`}
               </button>
             ))}
           </div>
@@ -488,7 +525,7 @@ function WordsQuizSection() {
       )}
 
       <Button onClick={startQuiz} size="lg" className="w-full">
-        クイズを開始
+        {isEn ? "Start Quiz" : "クイズを開始"}
         <ChevronRight className="h-4 w-4 ml-1" />
       </Button>
     </div>
@@ -504,7 +541,8 @@ function getDueCards(cards: FlashCard[]) {
   return cards.filter((c) => new Date(c.dueDate) <= now);
 }
 
-function SrsSection() {
+function SrsSection({ lang, isVisible }: { lang: NativeLanguage; isVisible?: boolean }) {
+  const isEn = lang === "en";
   const [cards, setCards] = useState<FlashCard[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [flipped, setFlipped] = useState(false);
@@ -518,7 +556,7 @@ function SrsSection() {
     setSessionComplete(false);
   };
 
-  useEffect(() => { refresh(); }, []);
+  useEffect(() => { refresh(); }, [isVisible]);
 
   const current = cards[currentIndex];
   const allCards = getFlashCards();
@@ -534,7 +572,7 @@ function SrsSection() {
   const handleRemove = () => {
     if (!current) return;
     removeFlashCard(current.id);
-    toast.success("カードを削除しました");
+    toast.success(isEn ? "Card removed" : "カードを削除しました");
     refresh();
   };
 
@@ -553,9 +591,13 @@ function SrsSection() {
           <Brain className="h-7 w-7 text-muted-foreground/60" />
         </div>
         <div>
-          <p className="text-sm font-medium">フラッシュカードがありません</p>
+          <p className="text-sm font-medium">
+            {isEn ? "No flashcards yet" : "フラッシュカードがありません"}
+          </p>
           <p className="text-xs text-muted-foreground mt-1">
-            検索タブで単語を調べると自動的に追加されます
+            {isEn
+              ? "Words you search are automatically added here"
+              : "検索タブで単語を調べると自動的に追加されます"}
           </p>
         </div>
       </div>
@@ -569,18 +611,36 @@ function SrsSection() {
           <CheckCircle className="h-7 w-7 text-emerald-600 dark:text-emerald-400" />
         </div>
         <div>
-          <p className="text-sm font-medium">今日のカードはすべて完了です！</p>
+          <p className="text-sm font-medium">
+            {isEn ? "All done for today!" : "今日のカードはすべて完了です！"}
+          </p>
           <p className="text-xs text-muted-foreground mt-1">
-            残り {allCards.length} 枚のカードがあります
+            {isEn
+              ? `${allCards.length} cards total`
+              : `残り ${allCards.length} 枚のカードがあります`}
           </p>
         </div>
         <Button variant="outline" size="sm" onClick={refresh}>
           <RotateCcw className="h-3.5 w-3.5 mr-2" />
-          もう一度
+          {isEn ? "Again" : "もう一度"}
         </Button>
       </div>
     );
   }
+
+  const SRS_BUTTONS = isEn
+    ? [
+        { result: "again" as FlashCardResult, label: "Forgot",  cls: "border-rose-300 text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-900/20" },
+        { result: "hard"  as FlashCardResult, label: "Hard",    cls: "border-amber-300 text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/20" },
+        { result: "good"  as FlashCardResult, label: "Good",    cls: "border-sky-300 text-sky-600 hover:bg-sky-50 dark:hover:bg-sky-900/20" },
+        { result: "easy"  as FlashCardResult, label: "Easy",    cls: "border-emerald-300 text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/20" },
+      ]
+    : [
+        { result: "again" as FlashCardResult, label: "忘れた", cls: "border-rose-300 text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-900/20" },
+        { result: "hard"  as FlashCardResult, label: "難しい", cls: "border-amber-300 text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/20" },
+        { result: "good"  as FlashCardResult, label: "良い",   cls: "border-sky-300 text-sky-600 hover:bg-sky-50 dark:hover:bg-sky-900/20" },
+        { result: "easy"  as FlashCardResult, label: "簡単",   cls: "border-emerald-300 text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/20" },
+      ];
 
   return (
     <div className="flex flex-col gap-4">
@@ -606,7 +666,9 @@ function SrsSection() {
               <p className="char-display text-6xl font-bold text-foreground">
                 {current.entry.simplified}
               </p>
-              <p className="text-xs text-muted-foreground mt-4">タップして裏を見る</p>
+              <p className="text-xs text-muted-foreground mt-4">
+                {isEn ? "Tap to reveal" : "タップして裏を見る"}
+              </p>
             </>
           ) : (
             <>
@@ -626,7 +688,7 @@ function SrsSection() {
                 onClick={(e) => { e.stopPropagation(); handleTTS(); }}
               >
                 <Volume2 className="h-3.5 w-3.5" />
-                発音
+                {isEn ? "Listen" : "発音"}
               </Button>
             </>
           )}
@@ -635,14 +697,7 @@ function SrsSection() {
 
       {flipped && (
         <div className="grid grid-cols-4 gap-2">
-          {(
-            [
-              { result: "again" as FlashCardResult, label: "忘れた", cls: "border-rose-300 text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-900/20" },
-              { result: "hard"  as FlashCardResult, label: "難しい", cls: "border-amber-300 text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/20" },
-              { result: "good"  as FlashCardResult, label: "良い",   cls: "border-sky-300 text-sky-600 hover:bg-sky-50 dark:hover:bg-sky-900/20" },
-              { result: "easy"  as FlashCardResult, label: "簡単",   cls: "border-emerald-300 text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/20" },
-            ] as const
-          ).map(({ result, label, cls }) => (
+          {SRS_BUTTONS.map(({ result, label, cls }) => (
             <Button
               key={result}
               variant="outline"
@@ -656,12 +711,14 @@ function SrsSection() {
       )}
 
       <div className="flex justify-between items-center text-xs text-muted-foreground px-1">
-        <span>全 {allCards.length} 枚</span>
+        <span>
+          {isEn ? `${allCards.length} total` : `全 ${allCards.length} 枚`}
+        </span>
         <button
           onClick={(e) => { e.stopPropagation(); handleRemove(); }}
           className="hover:text-destructive transition-colors"
         >
-          このカードを削除
+          {isEn ? "Remove card" : "このカードを削除"}
         </button>
       </div>
     </div>
@@ -674,14 +731,20 @@ function SrsSection() {
 
 type TabMode = "srs" | "hsk" | "words";
 
-const TABS: { id: TabMode; label: string; Icon: React.ComponentType<{ className?: string }> }[] = [
-  { id: "srs",   label: "SRS",      Icon: Brain },
-  { id: "hsk",   label: "HSK",      Icon: BookOpen },
-  { id: "words", label: "マイ単語", Icon: Star },
-];
+interface MemorizeTabProps {
+  lang: NativeLanguage;
+  isVisible?: boolean;
+}
 
-export function MemorizeTab() {
+export function MemorizeTab({ lang, isVisible }: MemorizeTabProps) {
+  const isEn = lang === "en";
   const [tab, setTab] = useState<TabMode>("srs");
+
+  const TABS: { id: TabMode; label: string; Icon: React.ComponentType<{ className?: string }> }[] = [
+    { id: "srs",   label: "SRS",                       Icon: Brain    },
+    { id: "hsk",   label: "HSK",                       Icon: BookOpen },
+    { id: "words", label: isEn ? "My Words" : "マイ単語", Icon: Star  },
+  ];
 
   return (
     <div className="flex flex-col gap-4">
@@ -703,9 +766,9 @@ export function MemorizeTab() {
         ))}
       </div>
 
-      {tab === "srs"   && <SrsSection />}
-      {tab === "hsk"   && <HskQuizSection />}
-      {tab === "words" && <WordsQuizSection />}
+      {tab === "srs"   && <SrsSection lang={lang} isVisible={isVisible} />}
+      {tab === "hsk"   && <HskQuizSection lang={lang} />}
+      {tab === "words" && <WordsQuizSection lang={lang} />}
     </div>
   );
 }

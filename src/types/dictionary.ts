@@ -1,7 +1,9 @@
+export type NativeLanguage = "en" | "ja";
+
 export interface ExampleSentence {
   chinese: string;
   pinyin: string;
-  japanese: string;
+  translation: string; // Japanese for JA users, English for EN users
 }
 
 export interface DictionaryEntry {

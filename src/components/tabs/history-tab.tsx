@@ -4,22 +4,24 @@ import { useState, useEffect } from "react";
 import { Clock, Trash2, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Separator } from "@/components/ui/separator";
-import { SearchHistoryItem } from "@/types/dictionary";
+import { SearchHistoryItem, NativeLanguage } from "@/types/dictionary";
 import { getHistory, clearHistory } from "@/lib/store";
 import { DictEntryCard } from "@/components/dict-entry-card";
 
 interface HistoryTabProps {
+  lang: NativeLanguage;
+  isVisible?: boolean;
   onNavigate: (tab: string) => void;
 }
 
-export function HistoryTab({ onNavigate }: HistoryTabProps) {
+export function HistoryTab({ lang, isVisible, onNavigate }: HistoryTabProps) {
+  const isEn = lang === "en";
   const [history, setHistory] = useState<SearchHistoryItem[]>([]);
   const [selected, setSelected] = useState<SearchHistoryItem | null>(null);
 
   useEffect(() => {
     setHistory(getHistory());
-  }, []);
+  }, [isVisible]);
 
   const handleClear = () => {
     clearHistory();
@@ -34,13 +36,15 @@ export function HistoryTab({ onNavigate }: HistoryTabProps) {
           <Clock className="h-7 w-7 text-muted-foreground/60" />
         </div>
         <div>
-          <p className="text-sm font-medium">履歴がありません</p>
+          <p className="text-sm font-medium">
+            {isEn ? "No history yet" : "履歴がありません"}
+          </p>
           <p className="text-xs text-muted-foreground mt-1">
-            検索した単語がここに表示されます
+            {isEn ? "Searched words will appear here" : "検索した単語がここに表示されます"}
           </p>
         </div>
         <Button variant="outline" size="sm" onClick={() => onNavigate("search")}>
-          検索へ
+          {isEn ? "Go to Search" : "検索へ"}
         </Button>
       </div>
     );
@@ -53,17 +57,21 @@ export function HistoryTab({ onNavigate }: HistoryTabProps) {
           onClick={() => setSelected(null)}
           className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors w-fit"
         >
-          ← 履歴に戻る
+          ← {isEn ? "Back to history" : "履歴に戻る"}
         </button>
-        <DictEntryCard entry={selected.entry} compact={false} />
+        <DictEntryCard entry={selected.entry} lang={lang} compact={false} />
       </div>
     );
   }
 
+  const dateLocale = isEn ? "en-US" : "ja-JP";
+
   return (
     <div className="flex flex-col gap-3">
       <div className="flex items-center justify-between">
-        <p className="text-xs text-muted-foreground">{history.length} 件</p>
+        <p className="text-xs text-muted-foreground">
+          {isEn ? `${history.length} items` : `${history.length} 件`}
+        </p>
         <Button
           variant="ghost"
           size="sm"
@@ -71,13 +79,13 @@ export function HistoryTab({ onNavigate }: HistoryTabProps) {
           onClick={handleClear}
         >
           <Trash2 className="h-3 w-3" />
-          すべて削除
+          {isEn ? "Clear all" : "すべて削除"}
         </Button>
       </div>
 
       <ScrollArea className="rounded-xl border border-border/60 overflow-hidden">
         <div className="divide-y divide-border/60">
-          {history.map((item, i) => (
+          {history.map((item) => (
             <button
               key={item.id}
               onClick={() => setSelected(item)}
@@ -96,7 +104,7 @@ export function HistoryTab({ onNavigate }: HistoryTabProps) {
               </div>
               <div className="flex items-center gap-3 shrink-0 ml-2">
                 <span className="text-[10px] text-muted-foreground hidden sm:block">
-                  {new Date(item.searchedAt).toLocaleDateString("ja-JP", {
+                  {new Date(item.searchedAt).toLocaleDateString(dateLocale, {
                     month: "short",
                     day: "numeric",
                   })}
