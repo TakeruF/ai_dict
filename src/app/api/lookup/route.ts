@@ -91,6 +91,9 @@ const callOpenAI = (query: string, apiKey: string) =>
 const callDeepSeek = (query: string, apiKey: string) =>
   callOpenAICompat(query, apiKey, "https://api.deepseek.com/v1", "deepseek-chat", "DeepSeek");
 
+const callOpenRouter = (query: string, apiKey: string) =>
+  callOpenAICompat(query, apiKey, "https://openrouter.ai/api/v1", "google/gemini-2.5-flash", "OpenRouter");
+
 async function callGemini(query: string, apiKey: string): Promise<string> {
   const genAI = new GoogleGenerativeAI(apiKey);
   // gemini-2.5-flash: gemini-2.0-flash-lite was deprecated (0/0 free-tier quota)
@@ -171,6 +174,8 @@ export async function POST(req: NextRequest) {
       raw = await callOpenAI(query, apiKey);
     } else if (provider === "deepseek") {
       raw = await callDeepSeek(query, apiKey);
+    } else if (provider === "openrouter") {
+      raw = await callOpenRouter(query, apiKey);
     } else {
       raw = await callAnthropic(query, apiKey);
     }

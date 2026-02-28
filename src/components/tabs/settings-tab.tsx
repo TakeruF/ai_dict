@@ -54,6 +54,14 @@ const PROVIDER_INFO: Record<
     freeTier: null,
     keyUrl: "platform.deepseek.com",
   },
+  openrouter: {
+    model: "google/gemini-2.5-flash",
+    input: "モデルにより異なる",
+    output: "モデルにより異なる",
+    perSearch: "モデルにより異なる",
+    freeTier: "一部モデルは無料",
+    keyUrl: "openrouter.ai/keys",
+  },
 };
 
 export function SettingsTab() {
@@ -86,10 +94,11 @@ export function SettingsTab() {
             <div className="flex gap-2">
               {(
                 [
-                  { id: "anthropic", label: "Claude"    },
-                  { id: "gemini",    label: "Gemini"    },
-                  { id: "openai",    label: "GPT-4o"    },
-                  { id: "deepseek",  label: "DeepSeek"  },
+                  { id: "anthropic",   label: "Claude"       },
+                  { id: "gemini",      label: "Gemini"       },
+                  { id: "openai",      label: "GPT-4o"       },
+                  { id: "deepseek",    label: "DeepSeek"     },
+                  { id: "openrouter",  label: "OpenRouter"   },
                 ] as const
               ).map(({ id, label }) => (
                 <button
@@ -161,8 +170,8 @@ export function SettingsTab() {
                   ? "sk-ant-..."
                   : settings.provider === "gemini"
                   ? "AIza..."
-                  : settings.provider === "deepseek"
-                  ? "sk-..."
+                  : settings.provider === "openrouter"
+                  ? "sk-or-v1-..."
                   : "sk-..."}
               </Badge>
             </label>
@@ -176,8 +185,8 @@ export function SettingsTab() {
                     ? "sk-ant-..."
                     : settings.provider === "gemini"
                     ? "AIzaSy..."
-                    : settings.provider === "deepseek"
-                    ? "sk-..."
+                    : settings.provider === "openrouter"
+                    ? "sk-or-v1-..."
                     : "sk-..."
                 }
                 className="pr-10 font-mono text-sm rounded-xl border-border/60"
