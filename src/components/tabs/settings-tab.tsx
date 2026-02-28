@@ -11,6 +11,51 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { AppSettings, getSettings, saveSettings } from "@/lib/store";
 
+const PROVIDER_INFO: Record<
+  AppSettings["provider"],
+  {
+    model: string;
+    input: string;
+    output: string;
+    perSearch: string;
+    freeTier: string | null;
+    keyUrl: string;
+  }
+> = {
+  anthropic: {
+    model: "claude-sonnet-4-6",
+    input: "$3.00",
+    output: "$15.00",
+    perSearch: "〜$0.01",
+    freeTier: null,
+    keyUrl: "console.anthropic.com",
+  },
+  gemini: {
+    model: "gemini-2.5-flash",
+    input: "$0.075",
+    output: "$0.30",
+    perSearch: "〜$0.001",
+    freeTier: "1,500 リクエスト/日",
+    keyUrl: "aistudio.google.com",
+  },
+  openai: {
+    model: "gpt-4o",
+    input: "$2.50",
+    output: "$10.00",
+    perSearch: "〜$0.007",
+    freeTier: null,
+    keyUrl: "platform.openai.com",
+  },
+  deepseek: {
+    model: "deepseek-chat",
+    input: "$0.27",
+    output: "$1.10",
+    perSearch: "〜$0.001",
+    freeTier: null,
+    keyUrl: "platform.deepseek.com",
+  },
+};
+
 export function SettingsTab() {
   const { theme, setTheme } = useTheme();
   const [settings, setSettings] = useState<AppSettings>(getSettings());
@@ -62,6 +107,51 @@ export function SettingsTab() {
             </div>
           </div>
 
+          {/* Provider info */}
+          {(() => {
+            const info = PROVIDER_INFO[settings.provider];
+            return (
+              <div className="rounded-xl bg-muted/40 border border-border/50 px-3 py-2.5 flex flex-col gap-1.5 text-xs">
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground">モデル</span>
+                  <span className="font-mono font-medium">{info.model}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground">料金（1M tokens）</span>
+                  <span>
+                    入力 <span className="font-medium">{info.input}</span>
+                    {" / "}
+                    出力 <span className="font-medium">{info.output}</span>
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground">1検索あたりの目安</span>
+                  <span className="font-medium">{info.perSearch}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground">無料枠</span>
+                  {info.freeTier ? (
+                    <span className="text-emerald-600 dark:text-emerald-400 font-medium">{info.freeTier}</span>
+                  ) : (
+                    <span className="text-muted-foreground">なし</span>
+                  )}
+                </div>
+                <Separator className="my-0.5" />
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground">APIキー取得</span>
+                  <a
+                    href={`https://${info.keyUrl}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-primary hover:underline"
+                  >
+                    {info.keyUrl}
+                  </a>
+                </div>
+              </div>
+            );
+          })()}
+
           {/* API Key input */}
           <div className="flex flex-col gap-2">
             <label className="text-xs text-muted-foreground">
@@ -101,6 +191,7 @@ export function SettingsTab() {
             </div>
             <p className="text-[11px] text-muted-foreground leading-relaxed">
               APIキーはブラウザのLocalStorageにのみ保存されます。サーバーには送信されません。
+              料金は2025年時点の目安です。最新情報は各プロバイダーの公式サイトでご確認ください。
             </p>
           </div>
         </div>

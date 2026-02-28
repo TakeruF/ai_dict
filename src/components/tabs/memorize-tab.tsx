@@ -6,8 +6,8 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { FlashCard, FlashCardResult } from "@/types/dictionary";
-import { getFlashCards, reviewFlashCard, removeFlashCard } from "@/lib/store";
+import { DictionaryEntry, FlashCard, FlashCardResult } from "@/types/dictionary";
+import { addFlashCard, getFlashCards, reviewFlashCard, removeFlashCard } from "@/lib/store";
 import { toast } from "sonner";
 
 // ─────────────────────────────────────────────────────────────────────
@@ -178,9 +178,11 @@ interface QuizResultProps {
   wrong: QuizQuestion[];
   onRestart: () => void;
   onBack: () => void;
+  onAddToSrs?: () => void;
 }
 
-function QuizResult({ score, total, wrong, onRestart, onBack }: QuizResultProps) {
+function QuizResult({ score, total, wrong, onRestart, onBack, onAddToSrs }: QuizResultProps) {
+  const [srsAdded, setSrsAdded] = useState(false);
   const pct = Math.round((score / total) * 100);
   const emoji = pct >= 80 ? "🎉" : pct >= 50 ? "💪" : "📚";
 
@@ -199,9 +201,25 @@ function QuizResult({ score, total, wrong, onRestart, onBack }: QuizResultProps)
 
       {wrong.length > 0 && (
         <div>
-          <p className="text-xs text-muted-foreground font-medium uppercase tracking-widest mb-2">
-            間違えた単語
-          </p>
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-xs text-muted-foreground font-medium uppercase tracking-widest">
+              間違えた単語
+            </p>
+            {onAddToSrs && (
+              <button
+                onClick={() => { onAddToSrs(); setSrsAdded(true); }}
+                disabled={srsAdded}
+                className={`text-xs flex items-center gap-1 px-2 py-0.5 rounded-lg border transition-colors ${
+                  srsAdded
+                    ? "border-emerald-300 text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20 dark:text-emerald-400 dark:border-emerald-700 cursor-default"
+                    : "border-border hover:bg-muted/40 text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <Brain className="h-3 w-3" />
+                {srsAdded ? "SRS追加済み" : "SRSに追加"}
+              </button>
+            )}
+          </div>
           <Card className="rounded-2xl border-border/60 overflow-hidden">
             <CardContent className="p-0">
               {wrong.map((q, i) => (
@@ -283,6 +301,23 @@ function HskQuizSection() {
     );
   }
 
+  const handleAddToSrs = () => {
+    wrongQ.forEach((q) => {
+      const entry: DictionaryEntry = {
+        simplified: q.word.chinese,
+        traditional: q.word.chinese,
+        pinyin: q.word.pinyin,
+        partOfSpeech: [],
+        definitions: [q.word.answer],
+        exampleSentences: [],
+        usageNote: "",
+        hskLevel: level,
+      };
+      addFlashCard(entry);
+    });
+    toast.success(`${wrongQ.length} 語をSRSに追加しました`);
+  };
+
   if (view === "result") {
     return (
       <QuizResult
@@ -291,6 +326,7 @@ function HskQuizSection() {
         wrong={wrongQ}
         onRestart={startQuiz}
         onBack={() => setView("setup")}
+        onAddToSrs={wrongQ.length > 0 ? handleAddToSrs : undefined}
       />
     );
   }
