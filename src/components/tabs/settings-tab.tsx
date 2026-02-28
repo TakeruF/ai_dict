@@ -35,7 +35,7 @@ export function SettingsTab({ lang, onLangChange }: SettingsTabProps) {
   const [settings, setSettings] = useState<AppSettings>(getSettings());
   const [showKey, setShowKey]   = useState(false);
   const [mounted, setMounted]   = useState(false);
-  const { scheduleReminder, cancelReminder, requestPermission, isSupported } = useLocalNotifications();
+  const { scheduleReminder, cancelReminder, requestPermission, sendTestNotification, isSupported } = useLocalNotifications();
 
   useEffect(() => { setMounted(true); }, []);
 
@@ -289,25 +289,14 @@ export function SettingsTab({ lang, onLangChange }: SettingsTabProps) {
           {isSupported && (
             <button
               onClick={async () => {
-                const granted = await requestPermission();
-                if (!granted) {
-                  toast.error(isEn ? "Permission denied" : "通知が拒否されました");
-                  return;
+                const result = await sendTestNotification();
+                if (result.success) {
+                  toast.success(isEn ? "Test notification scheduled in 5s" : "5秒後にテスト通知を送ります");
+                } else if (result.error === "permission_denied") {
+                  toast.error(isEn ? "Permission denied — enable in system settings" : "通知が拒否されました。設定アプリから許可してください");
+                } else {
+                  toast.error(`Error: ${result.error ?? "unknown"}`);
                 }
-                const { LocalNotifications } = await import("@capacitor/local-notifications");
-                const at = new Date(Date.now() + 5000);
-                await LocalNotifications.schedule({
-                  notifications: [{
-                    id: 9999,
-                    title: "AI Dict テスト",
-                    body: "通知のテストです / Test notification",
-                    schedule: { at },
-                    sound: "default",
-                    actionTypeId: "",
-                    extra: null,
-                  }],
-                });
-                toast.success(isEn ? "Test notification scheduled in 5s" : "5秒後にテスト通知を送ります");
               }}
               className="w-full rounded-xl border border-border/60 py-2.5 text-sm text-muted-foreground hover:bg-muted/40 transition-colors"
             >

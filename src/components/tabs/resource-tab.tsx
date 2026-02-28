@@ -220,7 +220,7 @@ function HskSheet({ level, label, onClose }: { level: number; label: string; onC
 
 // ── ResourceTab ──────────────────────────────────────────────────────
 
-export function ResourceTab() {
+export function ResourceTab({ isNative = false }: { isNative?: boolean }) {
   const [openLevel, setOpenLevel] = useState<{ level: number; label: string } | null>(null);
 
   return (
@@ -236,25 +236,49 @@ export function ResourceTab() {
               {HSK_LEVELS.map((hsk, i) => (
                 <div key={hsk.level}>
                   {i > 0 && <Separator />}
-                  <button
-                    onClick={() => setOpenLevel({ level: hsk.level, label: hsk.label })}
-                    className="w-full flex items-start justify-between gap-4 px-4 py-3.5 hover:bg-muted/40 active:bg-muted/60 transition-colors group text-left"
-                  >
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="text-sm font-medium group-hover:text-primary transition-colors">
-                          HSK {hsk.level}
-                        </span>
-                        <Badge className="text-[10px] font-normal border-0 px-1.5 py-0 bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
-                          {hsk.label}
-                        </Badge>
+                  {isNative ? (
+                    // Android: open in-app sheet (no page navigation)
+                    <button
+                      onClick={() => setOpenLevel({ level: hsk.level, label: hsk.label })}
+                      className="w-full flex items-start justify-between gap-4 px-4 py-3.5 hover:bg-muted/40 active:bg-muted/60 transition-colors group text-left"
+                    >
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-sm font-medium group-hover:text-primary transition-colors">
+                            HSK {hsk.level}
+                          </span>
+                          <Badge className="text-[10px] font-normal border-0 px-1.5 py-0 bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
+                            {hsk.label}
+                          </Badge>
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          {hsk.words.toLocaleString()} 語
+                        </p>
                       </div>
-                      <p className="text-xs text-muted-foreground mt-0.5">
-                        {hsk.words.toLocaleString()} 語
-                      </p>
-                    </div>
-                    <ExternalLink className="h-3.5 w-3.5 text-muted-foreground/50 group-hover:text-primary shrink-0 mt-0.5 transition-colors" />
-                  </button>
+                      <ExternalLink className="h-3.5 w-3.5 text-muted-foreground/50 group-hover:text-primary shrink-0 mt-0.5 transition-colors" />
+                    </button>
+                  ) : (
+                    // Web: navigate to dedicated page
+                    <a
+                      href={`/hsk/${hsk.level}/`}
+                      className="flex items-start justify-between gap-4 px-4 py-3.5 hover:bg-muted/40 transition-colors group"
+                    >
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-sm font-medium group-hover:text-primary transition-colors">
+                            HSK {hsk.level}
+                          </span>
+                          <Badge className="text-[10px] font-normal border-0 px-1.5 py-0 bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
+                            {hsk.label}
+                          </Badge>
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          {hsk.words.toLocaleString()} 語
+                        </p>
+                      </div>
+                      <ExternalLink className="h-3.5 w-3.5 text-muted-foreground/50 group-hover:text-primary shrink-0 mt-0.5 transition-colors" />
+                    </a>
+                  )}
                 </div>
               ))}
             </CardContent>

@@ -3,7 +3,7 @@
 import { useCallback } from "react";
 
 /** Returns true when running inside a Capacitor native shell */
-function isCapacitor(): boolean {
+export function isCapacitor(): boolean {
   return (
     typeof window !== "undefined" &&
     "Capacitor" in window &&
@@ -61,7 +61,6 @@ export function useLocalNotifications() {
               schedule: { at, repeats: true, every: "day" as const },
               sound: "default",
               actionTypeId: "",
-              extra: null,
             },
           ],
         });
@@ -98,5 +97,29 @@ export function useLocalNotifications() {
     }
   }, []);
 
-  return { scheduleReminder, cancelReminder, requestPermission, isSupported: isCapacitor() };
+  /** Schedule a one-off notification ~5 seconds from now for testing. */
+  const sendTestNotification = useCallback(async (): Promise<{ success: boolean; error?: string }> => {
+    const plugin = await getPlugin();
+    if (!plugin) return { success: false, error: "not_supported" };
+    try {
+      const perm = await plugin.requestPermissions();
+      if (perm.display !== "granted") return { success: false, error: "permission_denied" };
+      const at = new Date(Date.now() + 5000);
+      await plugin.schedule({
+        notifications: [{
+          id: 9999,
+          title: "AI Dict テスト",
+          body: "通知のテストです / Test notification",
+          schedule: { at },
+          sound: "default",
+          actionTypeId: "",
+        }],
+      });
+      return { success: true };
+    } catch (e) {
+      return { success: false, error: String(e) };
+    }
+  }, []);
+
+  return { scheduleReminder, cancelReminder, requestPermission, sendTestNotification, isSupported: isCapacitor() };
 }
