@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
-import { ExternalLink, X, Search } from "lucide-react";
+import { useState, useEffect, useMemo, useCallback } from "react";
+import { ExternalLink, X, Search, Volume2 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { createPortal } from "react-dom";
 
 const HSK_LEVELS = [
   { level: 1, label: "入門", words: 500 },
@@ -144,11 +145,23 @@ function HskSheet({ level, label, onClose }: { level: number; label: string; onC
     );
   }, [words, search]);
 
-  return (
+  const speak = useCallback((e: React.MouseEvent, chinese: string) => {
+    e.stopPropagation();
+    const u = new SpeechSynthesisUtterance(chinese);
+    u.lang = "zh-CN";
+    u.rate = 0.85;
+    window.speechSynthesis.speak(u);
+  }, []);
+
+  // Render as portal to escape from tab container overflow/flex context
+  const sheet = (
     // Full-screen fixed overlay — covers the entire app including header/bottom bar
     <div
-      className="fixed inset-0 z-[200] bg-background flex flex-col"
-      style={{ paddingTop: "env(safe-area-inset-top)", paddingBottom: "env(safe-area-inset-bottom)" }}
+      className="fixed inset-0 z-[200] flex flex-col bg-background"
+      style={{
+        paddingTop: "env(safe-area-inset-top)",
+        paddingBottom: "env(safe-area-inset-bottom)",
+      }}
     >
       {/* Sheet header */}
       <div className="shrink-0 flex items-center gap-3 px-4 h-14 border-b border-border/60 bg-background/90 backdrop-blur-sm">
@@ -165,7 +178,7 @@ function HskSheet({ level, label, onClose }: { level: number; label: string; onC
       </div>
 
       {/* Search bar */}
-      <div className="shrink-0 px-4 py-2 border-b border-border/40">
+      <div className="shrink-0 px-4 py-2 border-b border-border/40 bg-background">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
           <input
@@ -179,43 +192,55 @@ function HskSheet({ level, label, onClose }: { level: number; label: string; onC
       </div>
 
       {/* Word list */}
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto bg-background">
         {loading ? (
           <p className="text-center py-16 text-sm text-muted-foreground">読み込み中...</p>
         ) : words.length === 0 ? (
           <p className="text-center py-16 text-sm text-destructive">読み込みに失敗しました</p>
         ) : (
-          <table className="w-full text-sm">
-            <thead className="sticky top-0 bg-muted/80 backdrop-blur-sm">
-              <tr className="border-b border-border/60">
-                <th className="text-left px-3 py-2 text-xs font-medium text-muted-foreground w-10">#</th>
-                <th className="text-left px-2 py-2 text-xs font-medium text-muted-foreground">中国語</th>
-                <th className="text-left px-2 py-2 text-xs font-medium text-muted-foreground">ピンイン</th>
-                <th className="text-left px-2 py-2 text-xs font-medium text-muted-foreground">英語</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map((w, i) => (
-                <tr key={w.index} className={i % 2 === 0 ? "bg-background" : "bg-muted/20"}>
-                  <td className="px-3 py-2 text-muted-foreground text-xs tabular-nums">{w.index}</td>
-                  <td className="px-2 py-2 font-medium">{w.chinese}</td>
-                  <td className="px-2 py-2 text-muted-foreground text-xs">{w.pinyin}</td>
-                  <td className="px-2 py-2 text-muted-foreground text-xs">{w.english}</td>
-                </tr>
-              ))}
-              {filtered.length === 0 && (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="sticky top-0 bg-muted/80 backdrop-blur-sm border-b border-border/60">
                 <tr>
-                  <td colSpan={4} className="px-4 py-8 text-center text-xs text-muted-foreground">
-                    該当する単語が見つかりません
-                  </td>
+                  <th className="text-left px-4 py-2.5 text-xs font-medium text-muted-foreground w-12">#</th>
+                  <th className="text-left px-4 py-2.5 text-xs font-medium text-muted-foreground">中国語</th>
+                  <th className="text-left px-4 py-2.5 text-xs font-medium text-muted-foreground">ピンイン</th>
+                  <th className="text-left px-4 py-2.5 text-xs font-medium text-muted-foreground">英語</th>
+                  <th className="w-12"></th>
                 </tr>
-              )}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {filtered.map((w, i) => (
+                  <tr key={w.index} className={i % 2 === 0 ? "bg-background hover:bg-muted/30" : "bg-muted/20 hover:bg-muted/40"}>
+                    <td className="px-4 py-2 text-muted-foreground text-xs tabular-nums">{w.index}</td>
+                    <td className="px-4 py-2 font-medium text-base">{w.chinese}</td>
+                    <td className="px-4 py-2 text-muted-foreground text-sm">{w.pinyin}</td>
+                    <td className="px-4 py-2 text-muted-foreground text-sm">{w.english}</td>
+                    <td className="px-2 py-2">
+                      <button
+                        onClick={(e) => speak(e, w.chinese)}
+                        className="p-2 rounded-lg text-muted-foreground/50 hover:text-primary hover:bg-muted/60 transition-colors"
+                        aria-label="発音"
+                      >
+                        <Volume2 className="h-4 w-4" />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </div>
     </div>
   );
+
+  // Ensure we have a DOM element to render into
+  if (typeof document === "undefined") {
+    return null;
+  }
+
+  return createPortal(sheet, document.body);
 }
 
 // ── ResourceTab ──────────────────────────────────────────────────────
