@@ -9,6 +9,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { DictionaryEntry, FlashCard, FlashCardResult, NativeLanguage } from "@/types/dictionary";
 import { addFlashCard, getFlashCards, reviewFlashCard, removeFlashCard } from "@/lib/store";
 import { toast } from "sonner";
+import { useHaptics } from "@/hooks/useHaptics";
 
 // ─────────────────────────────────────────────────────────────────────
 // Quiz Types & Utilities
@@ -71,6 +72,7 @@ function QuizRunner({ questions, lang, onComplete }: QuizRunnerProps) {
   const [idx, setIdx] = useState(0);
   const [selected, setSelected] = useState<number | null>(null);
   const [results, setResults] = useState<boolean[]>([]);
+  const { lightImpact, successNotification, errorNotification } = useHaptics();
 
   const current = questions[idx];
   const isAnswered = selected !== null;
@@ -85,6 +87,13 @@ function QuizRunner({ questions, lang, onComplete }: QuizRunnerProps) {
   const handleSelect = (optIdx: number) => {
     if (isAnswered) return;
     setSelected(optIdx);
+    // Haptic feedback on answer selection (Android only)
+    const isCorrect = optIdx === current.correctIdx;
+    if (isCorrect) {
+      successNotification();
+    } else {
+      errorNotification();
+    }
   };
 
   const handleNext = () => {
@@ -547,6 +556,7 @@ function SrsSection({ lang, isVisible }: { lang: NativeLanguage; isVisible?: boo
   const [currentIndex, setCurrentIndex] = useState(0);
   const [flipped, setFlipped] = useState(false);
   const [sessionComplete, setSessionComplete] = useState(false);
+  const { lightImpact, successNotification, mediumImpact } = useHaptics();
 
   const refresh = () => {
     const due = getDueCards(getFlashCards());
@@ -563,10 +573,23 @@ function SrsSection({ lang, isVisible }: { lang: NativeLanguage; isVisible?: boo
 
   const handleResult = (result: FlashCardResult) => {
     if (!current) return;
+    // Haptic feedback based on difficulty selection (Android only)
+    if (result === "easy") {
+      successNotification();
+    } else if (result === "hard") {
+      mediumImpact();
+    } else {
+      lightImpact();
+    }
     reviewFlashCard(current.id, result);
     const next = currentIndex + 1;
     if (next >= cards.length) setSessionComplete(true);
     else { setCurrentIndex(next); setFlipped(false); }
+  };
+
+  const handleFlip = () => {
+    setFlipped(true);
+    lightImpact();
   };
 
   const handleRemove = () => {
@@ -658,7 +681,7 @@ function SrsSection({ lang, isVisible }: { lang: NativeLanguage; isVisible?: boo
 
       <Card
         className="rounded-2xl border-border/60 cursor-pointer select-none min-h-[260px] flex items-center justify-center"
-        onClick={() => setFlipped((f) => !f)}
+        onClick={() => { if (!flipped) handleFlip(); else setFlipped(false); }}
       >
         <CardContent className="p-8 flex flex-col items-center gap-4 text-center w-full">
           {!flipped ? (

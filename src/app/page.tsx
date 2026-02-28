@@ -10,7 +10,7 @@ import { ResourceTab } from "@/components/tabs/resource-tab";
 import { SettingsTab } from "@/components/tabs/settings-tab";
 import { NativeLanguage } from "@/types/dictionary";
 import { getSettings, saveSettings } from "@/lib/store";
-import { isCapacitor } from "@/hooks/useLocalNotifications";
+import { isCapacitor } from "@/hooks/useHaptics";
 
 // ── Tab definitions ─────────────────────────────────────────────────
 const TABS = [

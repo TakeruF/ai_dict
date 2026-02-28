@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Eye, EyeOff, Save, Sun, Moon, Monitor, Bell, BellOff } from "lucide-react";
+import { Eye, EyeOff, Save, Sun, Moon, Monitor } from "lucide-react";
 import { useTheme } from "next-themes";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,7 +11,6 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { AppSettings, getSettings, saveSettings } from "@/lib/store";
 import { NativeLanguage } from "@/types/dictionary";
-import { useLocalNotifications } from "@/hooks/useLocalNotifications";
 
 const PROVIDER_INFO: Record<
   AppSettings["provider"],
@@ -35,7 +34,6 @@ export function SettingsTab({ lang, onLangChange }: SettingsTabProps) {
   const [settings, setSettings] = useState<AppSettings>(getSettings());
   const [showKey, setShowKey]   = useState(false);
   const [mounted, setMounted]   = useState(false);
-  const { scheduleReminder, cancelReminder, requestPermission, sendTestNotification, isSupported } = useLocalNotifications();
 
   useEffect(() => { setMounted(true); }, []);
 
@@ -45,27 +43,8 @@ export function SettingsTab({ lang, onLangChange }: SettingsTabProps) {
     onLangChange(newLang);
   };
 
-  const handleSave = async () => {
+  const handleSave = () => {
     saveSettings(settings);
-
-    // Handle reminder scheduling
-    if (settings.reminderEnabled) {
-      const [h, m] = settings.reminderTime.split(":").map(Number);
-      const result = await scheduleReminder(h ?? 20, m ?? 0);
-      if (!result.success && result.reason === "not_supported") {
-        toast.success(isEn
-          ? "Settings saved (notifications require the mobile app)"
-          : "設定を保存しました（通知はモバイルアプリのみ）");
-        return;
-      }
-      if (!result.success) {
-        toast.error(isEn ? "Notification permission denied" : "通知の許可が必要です");
-        return;
-      }
-    } else {
-      await cancelReminder();
-    }
-
     toast.success(isEn ? "Settings saved" : "設定を保存しました");
   };
 
@@ -236,82 +215,6 @@ export function SettingsTab({ lang, onLangChange }: SettingsTabProps) {
             ? "Searched words are automatically saved as flashcards"
             : "検索した単語を自動でフラッシュカードリストに追加します"}
         />
-      </Section>
-
-      {/* ── Study reminder (Capacitor only) ───────────── */}
-      <Section title={isEn ? "Study Reminder" : "学習リマインダー"}>
-        <div className="space-y-4">
-          {/* Diagnostic badge */}
-          <div className="flex items-center gap-2 text-[11px]">
-            <span className="text-muted-foreground">Capacitor:</span>
-            <span className={isSupported ? "text-emerald-600 dark:text-emerald-400 font-medium" : "text-amber-600 dark:text-amber-400 font-medium"}>
-              {isSupported ? "検出済み ✓" : "未検出（ブラウザ）"}
-            </span>
-          </div>
-
-          <Toggle
-            checked={settings.reminderEnabled}
-            onChange={async (v) => {
-              setSettings((s) => ({ ...s, reminderEnabled: v }));
-              if (v && isSupported) {
-                const granted = await requestPermission();
-                toast[granted ? "success" : "error"](
-                  isEn
-                    ? (granted ? "Notification permission granted" : "Notification permission denied — enable in system settings")
-                    : (granted ? "通知の許可を取得しました" : "通知が拒否されました。設定アプリから許可してください"),
-                );
-              }
-            }}
-            label={isEn ? "Daily study reminder" : "毎日の学習リマインダー"}
-            description={isEn
-              ? (isSupported ? "Sends a daily push notification at the set time" : "Notifications require the Android app")
-              : (isSupported ? "設定時刻に毎日プッシュ通知を送ります" : "通知はAndroidアプリでのみ利用できます")}
-          />
-
-          {settings.reminderEnabled && (
-            <div className="flex items-center gap-3">
-              <div className="flex items-center gap-2 shrink-0">
-                {settings.reminderEnabled
-                  ? <Bell className="h-4 w-4 text-primary" />
-                  : <BellOff className="h-4 w-4 text-muted-foreground" />}
-                <span className="text-sm">{isEn ? "Time" : "通知時刻"}</span>
-              </div>
-              <input
-                type="time"
-                value={settings.reminderTime}
-                onChange={(e) => setSettings((s) => ({ ...s, reminderTime: e.target.value }))}
-                className="ml-auto h-9 px-3 rounded-xl border border-border/60 bg-background text-sm focus:outline-none focus:ring-1 focus:ring-primary/40"
-              />
-            </div>
-          )}
-
-          {/* Test notification button — fires 5 seconds from now */}
-          {isSupported && (
-            <button
-              onClick={async () => {
-                const result = await sendTestNotification();
-                if (result.success) {
-                  toast.success(isEn ? "Test notification scheduled in 5s" : "5秒後にテスト通知を送ります");
-                } else if (result.error === "permission_denied") {
-                  toast.error(isEn ? "Permission denied — enable in system settings" : "通知が拒否されました。設定アプリから許可してください");
-                } else {
-                  toast.error(`Error: ${result.error ?? "unknown"}`);
-                }
-              }}
-              className="w-full rounded-xl border border-border/60 py-2.5 text-sm text-muted-foreground hover:bg-muted/40 transition-colors"
-            >
-              {isEn ? "Send test notification (5s)" : "テスト通知を送る（5秒後）"}
-            </button>
-          )}
-
-          {!isSupported && (
-            <p className="text-[11px] text-amber-600 dark:text-amber-400">
-              {isEn
-                ? "Build & install the Android app to enable push notifications."
-                : "Androidアプリをインストールするとプッシュ通知が有効になります。"}
-            </p>
-          )}
-        </div>
       </Section>
 
       {/* ── Save ──────────────────────────────────────── */}

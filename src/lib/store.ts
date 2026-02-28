@@ -126,8 +126,6 @@ export interface AppSettings {
   theme: "light" | "dark" | "system";
   autoAddToFlashcards: boolean;
   nativeLanguage: NativeLanguage | null; // null = not yet chosen (first run)
-  reminderEnabled: boolean;
-  reminderTime: string; // "HH:MM" e.g. "20:00"
 }
 
 const DEFAULT_SETTINGS: AppSettings = {
@@ -136,8 +134,6 @@ const DEFAULT_SETTINGS: AppSettings = {
   theme: "system",
   autoAddToFlashcards: true,
   nativeLanguage: null,
-  reminderEnabled: false,
-  reminderTime: "20:00",
 };
 
 export function getSettings(): AppSettings {

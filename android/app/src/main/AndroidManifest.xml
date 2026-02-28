@@ -39,10 +39,5 @@
     <!-- Permissions -->
 
     <uses-permission android:name="android.permission.INTERNET" />
-    <!-- Local notifications -->
-    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.VIBRATE" />
-    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
-    <!-- SCHEDULE_EXACT_ALARM requires special user grant in system Settings on Android 12+;
-         omitting it so the plugin uses inexact alarms instead of throwing SecurityException -->
 </manifest>
