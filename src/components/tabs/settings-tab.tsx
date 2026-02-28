@@ -241,6 +241,14 @@ export function SettingsTab({ lang, onLangChange }: SettingsTabProps) {
       {/* ── Study reminder (Capacitor only) ───────────── */}
       <Section title={isEn ? "Study Reminder" : "学習リマインダー"}>
         <div className="space-y-4">
+          {/* Diagnostic badge */}
+          <div className="flex items-center gap-2 text-[11px]">
+            <span className="text-muted-foreground">Capacitor:</span>
+            <span className={isSupported ? "text-emerald-600 dark:text-emerald-400 font-medium" : "text-amber-600 dark:text-amber-400 font-medium"}>
+              {isSupported ? "検出済み ✓" : "未検出（ブラウザ）"}
+            </span>
+          </div>
+
           <Toggle
             checked={settings.reminderEnabled}
             onChange={async (v) => {
@@ -275,6 +283,36 @@ export function SettingsTab({ lang, onLangChange }: SettingsTabProps) {
                 className="ml-auto h-9 px-3 rounded-xl border border-border/60 bg-background text-sm focus:outline-none focus:ring-1 focus:ring-primary/40"
               />
             </div>
+          )}
+
+          {/* Test notification button — fires 5 seconds from now */}
+          {isSupported && (
+            <button
+              onClick={async () => {
+                const granted = await requestPermission();
+                if (!granted) {
+                  toast.error(isEn ? "Permission denied" : "通知が拒否されました");
+                  return;
+                }
+                const { LocalNotifications } = await import("@capacitor/local-notifications");
+                const at = new Date(Date.now() + 5000);
+                await LocalNotifications.schedule({
+                  notifications: [{
+                    id: 9999,
+                    title: "AI Dict テスト",
+                    body: "通知のテストです / Test notification",
+                    schedule: { at },
+                    sound: "default",
+                    actionTypeId: "",
+                    extra: null,
+                  }],
+                });
+                toast.success(isEn ? "Test notification scheduled in 5s" : "5秒後にテスト通知を送ります");
+              }}
+              className="w-full rounded-xl border border-border/60 py-2.5 text-sm text-muted-foreground hover:bg-muted/40 transition-colors"
+            >
+              {isEn ? "Send test notification (5s)" : "テスト通知を送る（5秒後）"}
+            </button>
           )}
 
           {!isSupported && (

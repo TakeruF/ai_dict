@@ -1,6 +1,7 @@
 "use client";
 
-import { ExternalLink } from "lucide-react";
+import { useState, useEffect, useMemo } from "react";
+import { ExternalLink, X, Search } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
@@ -88,86 +89,230 @@ const TAG_STYLE: Record<string, string> = {
   入門:  "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400",
 };
 
-export function ResourceTab() {
+// ── In-app HSK word list sheet ───────────────────────────────────────
+
+interface HskWord {
+  index: number;
+  chinese: string;
+  pinyin: string;
+  english: string;
+}
+
+function parseCsv(text: string): HskWord[] {
+  const lines = text.trim().split("\n");
+  const words: HskWord[] = [];
+  for (let i = 1; i < lines.length; i++) {
+    const line = lines[i].trim();
+    if (!line) continue;
+    const c1 = line.indexOf(",");
+    const c2 = line.indexOf(",", c1 + 1);
+    const c3 = line.indexOf(",", c2 + 1);
+    if (c1 === -1 || c2 === -1 || c3 === -1) continue;
+    const index = parseInt(line.slice(0, c1), 10);
+    if (!isNaN(index)) {
+      words.push({
+        index,
+        chinese: line.slice(c1 + 1, c2),
+        pinyin:  line.slice(c2 + 1, c3),
+        english: line.slice(c3 + 1),
+      });
+    }
+  }
+  return words;
+}
+
+function HskSheet({ level, label, onClose }: { level: number; label: string; onClose: () => void }) {
+  const [words, setWords]   = useState<HskWord[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch]   = useState("");
+
+  useEffect(() => {
+    setLoading(true);
+    setWords([]);
+    setSearch("");
+    fetch(`/hsk/New-HSK-${level}-Word-List.csv`)
+      .then((r) => { if (!r.ok) throw new Error("fetch failed"); return r.text(); })
+      .then((t) => { setWords(parseCsv(t)); setLoading(false); })
+      .catch(() => setLoading(false));
+  }, [level]);
+
+  const filtered = useMemo(() => {
+    if (!search.trim()) return words;
+    const q = search.toLowerCase();
+    return words.filter(
+      (w) => w.chinese.includes(q) || w.pinyin.toLowerCase().includes(q) || w.english.toLowerCase().includes(q),
+    );
+  }, [words, search]);
+
   return (
-    <div className="flex flex-col gap-6">
-      {/* HSK Word Lists */}
-      <div>
-        <h2 className="text-[11px] uppercase tracking-widest text-muted-foreground font-medium mb-3">
-          HSK 単語リスト
-        </h2>
-        <Card className="rounded-2xl border-border/60 overflow-hidden">
-          <CardContent className="p-0">
-            {HSK_LEVELS.map((hsk, i) => (
-              <div key={hsk.level}>
-                {i > 0 && <Separator />}
-                <a
-                  href={`/hsk/${hsk.level}/`}
-                  className="flex items-start justify-between gap-4 px-4 py-3.5 hover:bg-muted/40 transition-colors group"
-                >
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-sm font-medium group-hover:text-primary transition-colors">
-                        HSK {hsk.level}
-                      </span>
-                      <Badge className="text-[10px] font-normal border-0 px-1.5 py-0 bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
-                        {hsk.label}
-                      </Badge>
-                    </div>
-                    <p className="text-xs text-muted-foreground mt-0.5">
-                      {hsk.words.toLocaleString()} 語
-                    </p>
-                  </div>
-                  <ExternalLink className="h-3.5 w-3.5 text-muted-foreground/50 group-hover:text-primary shrink-0 mt-0.5 transition-colors" />
-                </a>
-              </div>
-            ))}
-          </CardContent>
-        </Card>
+    // Full-screen fixed overlay — covers the entire app including header/bottom bar
+    <div
+      className="fixed inset-0 z-[200] bg-background flex flex-col"
+      style={{ paddingTop: "env(safe-area-inset-top)", paddingBottom: "env(safe-area-inset-bottom)" }}
+    >
+      {/* Sheet header */}
+      <div className="shrink-0 flex items-center gap-3 px-4 h-14 border-b border-border/60 bg-background/90 backdrop-blur-sm">
+        <button onClick={onClose} className="text-muted-foreground hover:text-foreground" aria-label="閉じる">
+          <X className="h-5 w-5" />
+        </button>
+        <div className="flex items-center gap-2">
+          <span className="text-base font-semibold">HSK {level} 単語リスト</span>
+          <Badge className="text-[10px] font-normal border-0 px-1.5 py-0 bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
+            {label}
+          </Badge>
+        </div>
+        {!loading && <span className="ml-auto text-xs text-muted-foreground">{filtered.length} 語</span>}
       </div>
 
-      {RESOURCES.map((section) => (
-        <div key={section.heading}>
+      {/* Search bar */}
+      <div className="shrink-0 px-4 py-2 border-b border-border/40">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+          <input
+            type="search"
+            placeholder="中国語・ピンイン・英語で検索..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full pl-9 pr-3 py-2 text-sm rounded-xl border border-border/60 bg-muted/40 focus:outline-none focus:ring-1 focus:ring-primary/40"
+          />
+        </div>
+      </div>
+
+      {/* Word list */}
+      <div className="flex-1 overflow-y-auto">
+        {loading ? (
+          <p className="text-center py-16 text-sm text-muted-foreground">読み込み中...</p>
+        ) : words.length === 0 ? (
+          <p className="text-center py-16 text-sm text-destructive">読み込みに失敗しました</p>
+        ) : (
+          <table className="w-full text-sm">
+            <thead className="sticky top-0 bg-muted/80 backdrop-blur-sm">
+              <tr className="border-b border-border/60">
+                <th className="text-left px-3 py-2 text-xs font-medium text-muted-foreground w-10">#</th>
+                <th className="text-left px-2 py-2 text-xs font-medium text-muted-foreground">中国語</th>
+                <th className="text-left px-2 py-2 text-xs font-medium text-muted-foreground">ピンイン</th>
+                <th className="text-left px-2 py-2 text-xs font-medium text-muted-foreground">英語</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.map((w, i) => (
+                <tr key={w.index} className={i % 2 === 0 ? "bg-background" : "bg-muted/20"}>
+                  <td className="px-3 py-2 text-muted-foreground text-xs tabular-nums">{w.index}</td>
+                  <td className="px-2 py-2 font-medium">{w.chinese}</td>
+                  <td className="px-2 py-2 text-muted-foreground text-xs">{w.pinyin}</td>
+                  <td className="px-2 py-2 text-muted-foreground text-xs">{w.english}</td>
+                </tr>
+              ))}
+              {filtered.length === 0 && (
+                <tr>
+                  <td colSpan={4} className="px-4 py-8 text-center text-xs text-muted-foreground">
+                    該当する単語が見つかりません
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ── ResourceTab ──────────────────────────────────────────────────────
+
+export function ResourceTab() {
+  const [openLevel, setOpenLevel] = useState<{ level: number; label: string } | null>(null);
+
+  return (
+    <>
+      <div className="flex flex-col gap-6">
+        {/* HSK Word Lists */}
+        <div>
           <h2 className="text-[11px] uppercase tracking-widest text-muted-foreground font-medium mb-3">
-            {section.heading}
+            HSK 単語リスト
           </h2>
           <Card className="rounded-2xl border-border/60 overflow-hidden">
             <CardContent className="p-0">
-              {section.items.map((item, i) => (
-                <div key={item.title}>
+              {HSK_LEVELS.map((hsk, i) => (
+                <div key={hsk.level}>
                   {i > 0 && <Separator />}
-                  <a
-                    href={item.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-start justify-between gap-4 px-4 py-3.5 hover:bg-muted/40 transition-colors group"
+                  <button
+                    onClick={() => setOpenLevel({ level: hsk.level, label: hsk.label })}
+                    className="w-full flex items-start justify-between gap-4 px-4 py-3.5 hover:bg-muted/40 active:bg-muted/60 transition-colors group text-left"
                   >
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
                         <span className="text-sm font-medium group-hover:text-primary transition-colors">
-                          {item.title}
+                          HSK {hsk.level}
                         </span>
-                        {item.tags.map((tag) => (
-                          <Badge
-                            key={tag}
-                            className={`text-[10px] font-normal border-0 px-1.5 py-0 ${TAG_STYLE[tag] ?? "bg-muted text-muted-foreground"}`}
-                          >
-                            {tag}
-                          </Badge>
-                        ))}
+                        <Badge className="text-[10px] font-normal border-0 px-1.5 py-0 bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
+                          {hsk.label}
+                        </Badge>
                       </div>
-                      <p className="text-xs text-muted-foreground mt-0.5 truncate">
-                        {item.description}
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        {hsk.words.toLocaleString()} 語
                       </p>
                     </div>
                     <ExternalLink className="h-3.5 w-3.5 text-muted-foreground/50 group-hover:text-primary shrink-0 mt-0.5 transition-colors" />
-                  </a>
+                  </button>
                 </div>
               ))}
             </CardContent>
           </Card>
         </div>
-      ))}
-    </div>
+
+        {RESOURCES.map((section) => (
+          <div key={section.heading}>
+            <h2 className="text-[11px] uppercase tracking-widest text-muted-foreground font-medium mb-3">
+              {section.heading}
+            </h2>
+            <Card className="rounded-2xl border-border/60 overflow-hidden">
+              <CardContent className="p-0">
+                {section.items.map((item, i) => (
+                  <div key={item.title}>
+                    {i > 0 && <Separator />}
+                    <a
+                      href={item.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-start justify-between gap-4 px-4 py-3.5 hover:bg-muted/40 transition-colors group"
+                    >
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-sm font-medium group-hover:text-primary transition-colors">
+                            {item.title}
+                          </span>
+                          {item.tags.map((tag) => (
+                            <Badge
+                              key={tag}
+                              className={`text-[10px] font-normal border-0 px-1.5 py-0 ${TAG_STYLE[tag] ?? "bg-muted text-muted-foreground"}`}
+                            >
+                              {tag}
+                            </Badge>
+                          ))}
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-0.5 truncate">
+                          {item.description}
+                        </p>
+                      </div>
+                      <ExternalLink className="h-3.5 w-3.5 text-muted-foreground/50 group-hover:text-primary shrink-0 mt-0.5 transition-colors" />
+                    </a>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          </div>
+        ))}
+      </div>
+
+      {/* In-app HSK sheet — fixed overlay, no page navigation */}
+      {openLevel && (
+        <HskSheet
+          level={openLevel.level}
+          label={openLevel.label}
+          onClose={() => setOpenLevel(null)}
+        />
+      )}
+    </>
   );
 }
