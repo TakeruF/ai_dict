@@ -52,15 +52,22 @@ async function callAnthropic(query: string, apiKey: string): Promise<string> {
     .join("");
 }
 
-async function callOpenAI(query: string, apiKey: string): Promise<string> {
-  const res = await fetch("https://api.openai.com/v1/chat/completions", {
+/** Shared helper for OpenAI-compatible chat completion endpoints */
+async function callOpenAICompat(
+  query: string,
+  apiKey: string,
+  baseUrl: string,
+  model: string,
+  providerLabel: string,
+): Promise<string> {
+  const res = await fetch(`${baseUrl}/chat/completions`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${apiKey}`,
     },
     body: JSON.stringify({
-      model: "gpt-4o",
+      model,
       max_tokens: 1024,
       messages: [
         { role: "system", content: DICTIONARY_SYSTEM_PROMPT },
@@ -72,11 +79,17 @@ async function callOpenAI(query: string, apiKey: string): Promise<string> {
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
     const msg = (err as { error?: { message?: string } })?.error?.message;
-    throw new Error(msg ?? `OpenAI error ${res.status}`);
+    throw new Error(msg ?? `${providerLabel} error ${res.status}`);
   }
   const data = await res.json();
   return data.choices?.[0]?.message?.content ?? "";
 }
+
+const callOpenAI = (query: string, apiKey: string) =>
+  callOpenAICompat(query, apiKey, "https://api.openai.com/v1", "gpt-4o", "OpenAI");
+
+const callDeepSeek = (query: string, apiKey: string) =>
+  callOpenAICompat(query, apiKey, "https://api.deepseek.com/v1", "deepseek-chat", "DeepSeek");
 
 async function callGemini(query: string, apiKey: string): Promise<string> {
   const genAI = new GoogleGenerativeAI(apiKey);
@@ -149,6 +162,8 @@ export async function POST(req: NextRequest) {
       raw = await callGemini(query, apiKey);
     } else if (provider === "openai") {
       raw = await callOpenAI(query, apiKey);
+    } else if (provider === "deepseek") {
+      raw = await callDeepSeek(query, apiKey);
     } else {
       raw = await callAnthropic(query, apiKey);
     }

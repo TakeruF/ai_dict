@@ -41,9 +41,10 @@ export function SettingsTab() {
             <div className="flex gap-2">
               {(
                 [
-                  { id: "anthropic", label: "Claude"  },
-                  { id: "gemini",    label: "Gemini"  },
-                  { id: "openai",    label: "GPT-4o"  },
+                  { id: "anthropic", label: "Claude"    },
+                  { id: "gemini",    label: "Gemini"    },
+                  { id: "openai",    label: "GPT-4o"    },
+                  { id: "deepseek",  label: "DeepSeek"  },
                 ] as const
               ).map(({ id, label }) => (
                 <button
@@ -70,6 +71,8 @@ export function SettingsTab() {
                   ? "sk-ant-..."
                   : settings.provider === "gemini"
                   ? "AIza..."
+                  : settings.provider === "deepseek"
+                  ? "sk-..."
                   : "sk-..."}
               </Badge>
             </label>
@@ -83,6 +86,8 @@ export function SettingsTab() {
                     ? "sk-ant-..."
                     : settings.provider === "gemini"
                     ? "AIzaSy..."
+                    : settings.provider === "deepseek"
+                    ? "sk-..."
                     : "sk-..."
                 }
                 className="pr-10 font-mono text-sm rounded-xl border-border/60"
@@ -159,7 +164,7 @@ export function SettingsTab() {
       {/* ── About ───────────────────────────────────── */}
       <div className="text-center text-[11px] text-muted-foreground space-y-1 pb-2">
         <p>中日AI辞書 — beta</p>
-        <p>Powered by Claude Sonnet / Gemini 2.0 Flash / GPT-4o</p>
+        <p>Powered by Claude / Gemini / GPT-4o / DeepSeek</p>
       </div>
     </div>
   );
