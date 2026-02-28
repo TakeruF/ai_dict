@@ -67,12 +67,14 @@ async function callOpenAICompat(
   model: string,
   providerLabel: string,
   jsonMode = true,
+  extraHeaders: Record<string, string> = {},
 ): Promise<string> {
   const res = await fetch(`${baseUrl}/chat/completions`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${apiKey}`,
+      ...extraHeaders,
     },
     body: JSON.stringify({
       model,
@@ -100,7 +102,14 @@ const callDeepSeek = (query: string, apiKey: string) =>
   callOpenAICompat(query, apiKey, "https://api.deepseek.com/v1", "deepseek-chat", "DeepSeek");
 
 const callOpenRouter = (query: string, apiKey: string) =>
-  callOpenAICompat(query, apiKey, "https://openrouter.ai/api/v1", "meta-llama/llama-3.3-70b-instruct:free", "OpenRouter", false);
+  callOpenAICompat(
+    query, apiKey,
+    "https://openrouter.ai/api/v1",
+    "qwen/qwen-2.5-72b-instruct:free",
+    "OpenRouter",
+    false,
+    { "HTTP-Referer": "https://ai-dict.vercel.app", "X-Title": "中日AI辞書" },
+  );
 
 async function callGemini(query: string, apiKey: string): Promise<string> {
   const genAI = new GoogleGenerativeAI(apiKey);
