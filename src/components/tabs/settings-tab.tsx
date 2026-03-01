@@ -62,8 +62,8 @@ export function SettingsTab({ lang, onLangChange }: SettingsTabProps) {
       <Section title={isEn ? "Interface Language" : lang === "zh" ? "界面语言" : "表示言語"}>
         <div className="flex gap-2">
           {([
-            { id: "ja" as NativeLanguage, label: "日本語", sub: "中日AI辞書" },
-            { id: "en" as NativeLanguage, label: "English", sub: "Zh-En Dictionary" },
+            { id: "ja" as NativeLanguage, label: "日本語", sub: "中国語AI辞書" },
+            { id: "en" as NativeLanguage, label: "English", sub: "Chinese AI Dictionary" },
             { id: "zh" as NativeLanguage, label: "中文", sub: "日语AI词典" },
           ]).map(({ id, label, sub }) => (
             <button
@@ -231,7 +231,7 @@ export function SettingsTab({ lang, onLangChange }: SettingsTabProps) {
 
       {/* ── About ─────────────────────────────────────── */}
       <div className="text-center text-[11px] text-muted-foreground space-y-1 pb-4">
-        <p>{isEn ? "Zh-En AI Dictionary" : isZh ? "日语AI词典" : "中日AI辞書"} — beta</p>
+        <p>{isEn ? "Chinese AI Dictionary" : isZh ? "日语AI词典" : "中国語AI辞書"} — beta</p>
         <p>Powered by Claude / Gemini / GPT-4o / DeepSeek</p>
       </div>
     </div>
