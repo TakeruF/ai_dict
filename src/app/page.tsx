@@ -242,7 +242,7 @@ export default function Home() {
               disabled={!searchInput.trim()}
               className="w-full h-9 rounded-xl bg-primary text-primary-foreground text-sm font-medium disabled:opacity-40 transition-opacity"
             >
-              {isEn ? "Search" : "検索"}
+              {isEn ? "Search" : isZh ? "搜索" : "検索"}
             </button>
           </div>
 
@@ -376,7 +376,7 @@ export default function Home() {
             disabled={!searchInput.trim()}
             className="shrink-0 h-9 px-4 rounded-xl bg-primary text-primary-foreground text-sm font-medium disabled:opacity-40 transition-opacity"
           >
-            {isEn ? "Search" : "検索"}
+            {isEn ? "Search" : isZh ? "搜索" : "検索"}
           </button>
         </div>
 

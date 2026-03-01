@@ -16,6 +16,7 @@ interface HistoryTabProps {
 
 export function HistoryTab({ lang, isVisible, onNavigate }: HistoryTabProps) {
   const isEn = lang === "en";
+  const isZh = lang === "zh";
   const [history, setHistory] = useState<SearchHistoryItem[]>([]);
   const [selected, setSelected] = useState<SearchHistoryItem | null>(null);
 
@@ -37,14 +38,14 @@ export function HistoryTab({ lang, isVisible, onNavigate }: HistoryTabProps) {
         </div>
         <div>
           <p className="text-sm font-medium">
-            {isEn ? "No history yet" : "履歴がありません"}
+            {isEn ? "No history yet" : isZh ? "暂无历史" : "履歴がありません"}
           </p>
           <p className="text-xs text-muted-foreground mt-1">
-            {isEn ? "Searched words will appear here" : "検索した単語がここに表示されます"}
+            {isEn ? "Searched words will appear here" : isZh ? "搜索的词汇将显示在这里" : "検索した単語がここに表示されます"}
           </p>
         </div>
         <Button variant="outline" size="sm" onClick={() => onNavigate("search")}>
-          {isEn ? "Go to Search" : "検索へ"}
+          {isEn ? "Go to Search" : isZh ? "去搜索" : "検索へ"}
         </Button>
       </div>
     );
@@ -57,20 +58,20 @@ export function HistoryTab({ lang, isVisible, onNavigate }: HistoryTabProps) {
           onClick={() => setSelected(null)}
           className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors w-fit"
         >
-          ← {isEn ? "Back to history" : "履歴に戻る"}
+          ← {isEn ? "Back to history" : isZh ? "返回历史" : "履歴に戻る"}
         </button>
         <DictEntryCard entry={selected.entry} lang={lang} compact={false} />
       </div>
     );
   }
 
-  const dateLocale = isEn ? "en-US" : "ja-JP";
+  const dateLocale = isEn ? "en-US" : isZh ? "zh-CN" : "ja-JP";
 
   return (
     <div className="flex flex-col gap-3">
       <div className="flex items-center justify-between">
         <p className="text-xs text-muted-foreground">
-          {isEn ? `${history.length} items` : `${history.length} 件`}
+          {isEn ? `${history.length} items` : isZh ? `${history.length} 条` : `${history.length} 件`}
         </p>
         <Button
           variant="ghost"
@@ -79,7 +80,7 @@ export function HistoryTab({ lang, isVisible, onNavigate }: HistoryTabProps) {
           onClick={handleClear}
         >
           <Trash2 className="h-3 w-3" />
-          {isEn ? "Clear all" : "すべて削除"}
+          {isEn ? "Clear all" : isZh ? "清空" : "すべて削除"}
         </Button>
       </div>
 
