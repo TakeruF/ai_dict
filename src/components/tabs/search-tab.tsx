@@ -104,7 +104,7 @@ function EmptyState({ lang }: { lang: NativeLanguage }) {
   const examples = isEn
     ? ["你好", "谢谢", "hello", "friend", "study"]
     : isZh
-    ? ["你好", "の", "ありがとう", "友達", "勉強"]
+    ? ["你好", "さくら", "ありがとう", "友達", "勉強"]
     : ["你好", "谢谢", "ありがとう", "友達", "勉強する"];
 
   return (

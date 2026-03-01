@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Primary brand colors (same for both modes) -->
+    <color name="colorPrimary">#3B82F6</color>
+    <color name="colorPrimaryDark">#2563EB</color>
+    <color name="colorAccent">#60A5FA</color>
+    
+    <!-- Dark mode background colors -->
+    <color name="colorBackground">#0A0A0A</color>
+    <color name="colorBackgroundDark">#0A0A0A</color>
+    
+    <!-- Dark mode surface colors -->
+    <color name="colorSurface">#171717</color>
+    <color name="colorSurfaceDark">#171717</color>
+    
+    <!-- Status bar colors -->
+    <color name="statusBarColor">@android:color/transparent</color>
+    <color name="navigationBarColor">@android:color/transparent</color>
+</resources>

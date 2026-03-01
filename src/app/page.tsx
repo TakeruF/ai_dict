@@ -12,6 +12,7 @@ import { NativeLanguage, DictionaryDirection } from "@/types/dictionary";
 import { getSettings, saveSettings } from "@/lib/store";
 import { isCapacitor } from "@/hooks/useHaptics";
 import { useIsIOS } from "@/hooks/useIsIOS";
+import { useIsAndroid } from "@/hooks/useIsAndroid";
 import { useLiquidGlassNative } from "@/hooks/useLiquidGlassNative";
 
 // ── Tab definitions ─────────────────────────────────────────────────
@@ -80,6 +81,7 @@ export default function Home() {
   const [searchInput, setSearchInput] = useState("");
   const [activeQuery, setActiveQuery] = useState("");
   const isIOS                         = useIsIOS();
+  const isAndroid                     = useIsAndroid();
   const { syncTabToNative, triggerSearchOnNative } = useLiquidGlassNative();
 
   // Swipe gesture refs — avoid re-renders during drag
@@ -242,40 +244,59 @@ export default function Home() {
 
   const isEn     = lang === "en";
   const isZh     = lang === "zh";
-  const title    = isEn ? "Chinese AI Dictionary" : isZh ? "日语AI词典" : "中国語AI辞書";
+  const title    = isEn ? "Chinese AI Dict" : isZh ? "日语AI词典" : "中国語AI辞書";
   const isNative = isCapacitor(); // safe: mounted guard ensures client-side
 
-  // ── iOS Liquid Glass styles ────────────────────────────────────────
+  // ── Platform-specific styles ────────────────────────────────────────
+  // iOS: Liquid Glass aesthetic
+  // Android: Material Design 3 aesthetic
+  // Web: Standard clean look
   const headerClass = isNative && isIOS
     ? "shrink-0 bg-white/10 dark:bg-black/10 backdrop-blur-lg border-b border-white/20 dark:border-white/10 flex items-end px-4 pb-3 z-40"
+    : isNative && isAndroid
+    ? "shrink-0 bg-background/95 backdrop-blur-sm border-b border-border/40 flex items-end px-4 pb-3 z-40 shadow-sm"
     : "shrink-0 bg-background/90 backdrop-blur-sm border-b border-border/60 flex items-end px-4 pb-3 z-40";
 
   const bottomBarClass = isNative && isIOS
     ? "shrink-0 bg-white/10 dark:bg-black/10 backdrop-blur-lg border-t border-white/20 dark:border-white/10 z-50"
+    : isNative && isAndroid
+    ? "shrink-0 bg-background/98 backdrop-blur-sm border-t border-border/30 z-50 shadow-[0_-2px_10px_rgba(0,0,0,0.05)]"
     : "shrink-0 bg-background border-t border-border/60 z-50";
 
   const searchBarBorderClass = isNative && isIOS
     ? "h-14 flex items-center px-3 gap-2 border-b border-white/10 dark:border-white/5"
+    : isNative && isAndroid
+    ? "h-14 flex items-center px-3 gap-2 border-b border-border/20"
     : "h-14 flex items-center px-3 gap-2 border-b border-border/40";
 
   const searchInputClass = isNative && isIOS
     ? "pl-9 pr-8 h-9 text-sm rounded-xl bg-white/20 dark:bg-white/10 border border-white/30 dark:border-white/20 backdrop-blur-md focus-visible:ring-1 focus-visible:ring-primary"
+    : isNative && isAndroid
+    ? "pl-9 pr-8 h-10 text-sm rounded-2xl border-border/50 bg-muted/30 focus-visible:ring-2 focus-visible:ring-primary/50 shadow-inner"
     : "pl-9 pr-8 h-9 text-sm rounded-xl border-border/60 bg-muted/40 focus-visible:ring-1";
 
   const searchButtonClass = isNative && isIOS
     ? "shrink-0 h-9 px-4 rounded-xl bg-gradient-to-br from-primary to-primary/80 text-primary-foreground text-sm font-medium disabled:opacity-40 transition-all hover:shadow-lg active:scale-95"
+    : isNative && isAndroid
+    ? "shrink-0 h-10 px-5 rounded-2xl bg-primary text-primary-foreground text-sm font-medium disabled:opacity-40 transition-all active:scale-[0.98] shadow-md active:shadow-sm"
     : "shrink-0 h-9 px-4 rounded-xl bg-primary text-primary-foreground text-sm font-medium disabled:opacity-40 transition-opacity";
 
   const tabNavClass = isNative && isIOS
     ? "h-14 flex items-stretch border-t border-white/10 dark:border-white/5 backdrop-blur-sm"
+    : isNative && isAndroid
+    ? "h-16 flex items-stretch"
     : "h-14 flex items-stretch";
 
   const tabButtonActiveClass = isNative && isIOS
     ? "text-primary bg-white/10 dark:bg-white/5"
+    : isNative && isAndroid
+    ? "text-primary"
     : "text-primary";
 
   const tabButtonInactiveClass = isNative && isIOS
     ? "text-muted-foreground hover:bg-white/5 dark:hover:bg-white/[3%]"
+    : isNative && isAndroid
+    ? "text-muted-foreground/80"
     : "text-muted-foreground";
 
   // ── Desktop layout (web) ──────────────────────────────────────────
