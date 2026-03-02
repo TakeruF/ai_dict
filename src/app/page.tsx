@@ -79,17 +79,21 @@ export default function Home() {
   const [tabIndex, setTabIndex]       = useState(0);
   const [searchInput, setSearchInput] = useState("");
   const [activeQuery, setActiveQuery] = useState("");  
-  // Force loading to end after maximum time
+  // Force loading to end after maximum time (shorter for mobile)
   const [forceLoaded, setForceLoaded] = useState(false);
   
   useEffect(() => {
-    // Force app to be ready after 8 seconds regardless of auth state
-    const maxTimeout = setTimeout(() => {
-      console.warn('Forcing app to load due to timeout');
-      setForceLoaded(true);
-    }, 8000);
+    // Mobile gets shorter timeout for faster UX
+    const isMobile = isCapacitor();
+    const maxTimeout = isMobile ? 5000 : 8000; // 5s for mobile, 8s for web
     
-    return () => clearTimeout(maxTimeout);
+    // Force app to be ready after timeout regardless of auth state
+    const timeoutId = setTimeout(() => {
+      console.warn(`Forcing app to load due to timeout (${maxTimeout}ms)`);
+      setForceLoaded(true);
+    }, maxTimeout);
+    
+    return () => clearTimeout(timeoutId);
   }, []);
   
   // Consider loading complete if force loaded OR auth is not loading

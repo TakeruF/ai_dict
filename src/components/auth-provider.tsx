@@ -12,6 +12,7 @@ import type { User, Session } from "@supabase/supabase-js";
 import { supabase, isSupabaseConfigured } from "@/lib/supabase";
 import type { Profile } from "@/types/database";
 import { loadingDebugger } from "@/lib/loading-debugger";
+import { isCapacitor } from "@/hooks/useHaptics";
 
 // ── Context types ──────────────────────────────────────────────────
 interface AuthContextValue {
@@ -163,12 +164,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Always set mounted to true immediately
     setMounted(true);
     
+    // Shorter timeout for mobile environments
+    const isMobile = isCapacitor();
+    const maxTimeoutDuration = isMobile ? 3000 : 5000; // 3s for mobile, 5s for web
+    
     // Force loading to false after maximum timeout regardless of what happens
     const maxTimeout = setTimeout(() => {
-      console.warn('Auth max timeout reached - forcing loading to false');
+      console.warn(`Auth max timeout reached (${maxTimeoutDuration}ms) - forcing loading to false`);
       setLoading(false);
-      loadingDebugger.logError('auth-bootstrap', 'max timeout reached');
-    }, 5000); // 5 second absolute maximum
+      loadingDebugger.logError('auth-bootstrap', `max timeout reached (${maxTimeoutDuration}ms)`);
+    }, maxTimeoutDuration);
     
     // Skip Supabase entirely if not configured - immediate local mode
     if (!isSupabaseConfigured) {
@@ -181,15 +186,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     let mounted = true;
 
-    // Simple session check with immediate fallback
+    // Simple session check with immediate fallback (shorter timeout for mobile)
     const initAuth = async () => {
       try {
         console.log('Getting initial session...');
         
-        // Race session check against timeout
+        // Race session check against timeout (shorter for mobile)
         const sessionPromise = supabase.auth.getSession();
+        const timeoutDuration = isMobile ? 2000 : 3000; // 2s for mobile, 3s for web
         const timeoutPromise = new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Session check timeout')), 3000)
+          setTimeout(() => reject(new Error('Session check timeout')), timeoutDuration)
         );
         
         const { data: { session }, error } = await Promise.race([
