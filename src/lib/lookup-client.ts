@@ -204,6 +204,15 @@ export async function lookupWord(
   direction: DictionaryDirection = "zh-ja",
   invitationCode?: string,
 ): Promise<DictionaryEntry> {
+  // Validate input to prevent infinite loops
+  if (!query || query.length === 0) {
+    throw makeError("invalid_query", "Query cannot be empty");
+  }
+  
+  if (query.length > 200) {
+    throw makeError("invalid_query", "Query too long (max 200 characters)");
+  }
+
   // If invitation code is provided, route through server (API key stays hidden)
   if (invitationCode) {
     return lookupViaServer(query, nativeLanguage, direction, invitationCode);
@@ -216,11 +225,20 @@ export async function lookupWord(
 
   let raw: string;
   try {
-    if (provider === "gemini")       raw = await callGemini(query, cleanKey, systemPrompt);
-    else if (provider === "openai")  raw = await callOpenAI(query, cleanKey, systemPrompt);
-    else if (provider === "deepseek") raw = await callDeepSeek(query, cleanKey, systemPrompt);
-    else if (provider === "openrouter") raw = await callOpenRouter(query, cleanKey, systemPrompt);
-    else                              raw = await callAnthropic(query, cleanKey, systemPrompt);
+    // Add timeout promise to prevent hanging requests
+    const timeoutPromise = new Promise<never>((_, reject) =>
+      setTimeout(() => reject(makeError("timeout", "Request timeout")), 15000)
+    );
+
+    const lookupPromise = (async () => {
+      if (provider === "gemini")       return await callGemini(query, cleanKey, systemPrompt);
+      if (provider === "openai")       return await callOpenAI(query, cleanKey, systemPrompt);
+      if (provider === "deepseek")     return await callDeepSeek(query, cleanKey, systemPrompt);
+      if (provider === "openrouter")   return await callOpenRouter(query, cleanKey, systemPrompt);
+      return await callAnthropic(query, cleanKey, systemPrompt);
+    })();
+
+    raw = await Promise.race([lookupPromise, timeoutPromise]);
   } catch (err) {
     // Re-throw already-classified errors, classify unknown network errors
     if ((err as { code?: string }).code) throw err;

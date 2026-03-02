@@ -565,15 +565,27 @@ function SrsSection({ lang, isVisible }: { lang: NativeLanguage; isVisible?: boo
   const [sessionComplete, setSessionComplete] = useState(false);
   const { lightImpact, successNotification, mediumImpact } = useHaptics();
 
-  const refresh = () => {
-    const due = getDueCards(getFlashCards());
-    setCards(due);
-    setCurrentIndex(0);
-    setFlipped(false);
-    setSessionComplete(false);
-  };
+  const refresh = useCallback(() => {
+    try {
+      const due = getDueCards(getFlashCards());
+      setCards(due);
+      setCurrentIndex(0);
+      setFlipped(false);
+      setSessionComplete(false);
+    } catch (error) {
+      console.error('Failed to refresh flashcards:', error);
+      setCards([]);
+      setCurrentIndex(0);
+      setFlipped(false);
+      setSessionComplete(false);
+    }
+  }, []);
 
-  useEffect(() => { refresh(); }, [isVisible]);
+  useEffect(() => { 
+    if (isVisible) {
+      refresh(); 
+    }
+  }, [isVisible, refresh]);
 
   const current = cards[currentIndex];
   const allCards = getFlashCards();

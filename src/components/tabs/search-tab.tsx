@@ -48,13 +48,24 @@ export function SearchTab({ lang, direction, query, onNavigate }: SearchTabProps
   const { data, isFetching, isError, error, isSuccess } = useQuery({
     queryKey: ["lookup", query, settings.provider, lang, effectiveDirection, settings.apiKey.slice(0, 8), settings.invitationCode ? "invite" : "key"],
     queryFn:  () => lookupWord(query, settings.apiKey, settings.provider, lang, effectiveDirection, settings.invitationCode || undefined),
-    enabled:  query.length > 0,
+    enabled:  query.length > 0 && query.length < 200, // Limit query length to prevent abuse
+    // Prevent infinite loading with strict timeout
+    staleTime: 1000 * 60 * 5, // 5 minutes
+    gcTime: 1000 * 60 * 30, // 30 minutes
     // Errors from lookupWord already have .code attached; propagate as-is
     retry:    (failCount, err) => {
       const code = (err as { code?: string }).code;
       // Don't retry auth / not-found errors
-      if (code === "invalid_api_key" || code === "missing_api_key" || code === "not_found" || code === "invalid_invitation_code") return false;
+      if (code === "invalid_api_key" || 
+          code === "missing_api_key" || 
+          code === "not_found" || 
+          code === "invalid_invitation_code" ||
+          code === "rate_limited") return false;
       return failCount < 1;
+    },
+    // Add timeout to prevent hanging
+    meta: {
+      timeout: 15000, // 15 second timeout for lookups
     },
   });
 
