@@ -116,58 +116,77 @@ export function SettingsTab({ lang, onLangChange }: SettingsTabProps) {
     <div className="flex flex-col gap-6">
 
       {/* ── Account ───────────────────────────────────── */}
-      {user && (
-        <Section title={isEn ? "Account" : isZh ? "账户" : "アカウント"}>
-          <div className="space-y-3">
-            <div className="flex items-center gap-3">
-              {profile?.avatar_url ? (
-                <img
-                  src={profile.avatar_url}
-                  alt=""
-                  className="h-10 w-10 rounded-full object-cover shrink-0"
-                />
-              ) : (
-                <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                  <span className="text-sm font-medium text-primary">
-                    {(profile?.display_name ?? user.email ?? "?")[0]?.toUpperCase()}
-                  </span>
+      <Section title={isEn ? "Account" : isZh ? "账户" : "アカウント"}>
+        <div className="space-y-3">
+          {user ? (
+            // Logged in user info
+            <>
+              <div className="flex items-center gap-3">
+                {profile?.avatar_url ? (
+                  <img
+                    src={profile.avatar_url}
+                    alt=""
+                    className="h-10 w-10 rounded-full object-cover shrink-0"
+                  />
+                ) : (
+                  <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                    <span className="text-sm font-medium text-primary">
+                      {(profile?.display_name ?? user.email ?? "?")[0]?.toUpperCase()}
+                    </span>
+                  </div>
+                )}
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium truncate">
+                    {profile?.display_name ?? user.email}
+                  </p>
+                  <p className="text-xs text-muted-foreground truncate">{user.email}</p>
                 </div>
-              )}
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium truncate">
-                  {profile?.display_name ?? user.email}
-                </p>
-                <p className="text-xs text-muted-foreground truncate">{user.email}</p>
+                {isAdmin && (
+                  <Badge variant="outline" className="text-[10px] text-amber-600 border-amber-300 dark:text-amber-400 dark:border-amber-700 shrink-0">
+                    {isEn ? "Admin" : isZh ? "管理员" : "管理者"}
+                  </Badge>
+                )}
               </div>
-              {isAdmin && (
-                <Badge variant="outline" className="text-[10px] text-amber-600 border-amber-300 dark:text-amber-400 dark:border-amber-700 shrink-0">
-                  {isEn ? "Admin" : isZh ? "管理员" : "管理者"}
-                </Badge>
+
+              {/* Admin page link — web only */}
+              {isAdmin && !isCapacitor() && (
+                <button
+                  onClick={() => (window.location.href = "/admin/")}
+                  className="w-full flex items-center gap-2 rounded-xl border border-amber-200/60 dark:border-amber-800/40 bg-amber-50/60 dark:bg-amber-900/20 px-3 py-2.5 text-sm font-medium text-amber-700 dark:text-amber-300 hover:bg-amber-100/60 dark:hover:bg-amber-900/30 transition-colors"
+                >
+                  <ShieldCheck className="h-4 w-4" />
+                  {isEn ? "Admin Dashboard" : isZh ? "管理面板" : "管理者ダッシュボード"}
+                </button>
               )}
-            </div>
 
-            {/* Admin page link — web only */}
-            {isAdmin && !isCapacitor() && (
-              <button
-                onClick={() => (window.location.href = "/admin/")}
-                className="w-full flex items-center gap-2 rounded-xl border border-amber-200/60 dark:border-amber-800/40 bg-amber-50/60 dark:bg-amber-900/20 px-3 py-2.5 text-sm font-medium text-amber-700 dark:text-amber-300 hover:bg-amber-100/60 dark:hover:bg-amber-900/30 transition-colors"
+              <Button
+                variant="outline"
+                onClick={handleSignOut}
+                className="w-full rounded-xl text-sm"
               >
-                <ShieldCheck className="h-4 w-4" />
-                {isEn ? "Admin Dashboard" : isZh ? "管理面板" : "管理者ダッシュボード"}
-              </button>
-            )}
-
-            <Button
-              variant="outline"
-              onClick={handleSignOut}
-              className="w-full rounded-xl text-sm"
-            >
-              <LogOut className="h-4 w-4 mr-2" />
-              {isEn ? "Sign Out" : isZh ? "退出登录" : "ログアウト"}
-            </Button>
-          </div>
-        </Section>
-      )}
+                <LogOut className="h-4 w-4 mr-2" />
+                {isEn ? "Sign Out" : isZh ? "退出登录" : "ログアウト"}
+              </Button>
+            </>
+          ) : (
+            // Guest mode - show login button
+            <div className="text-center py-4">
+              <div className="h-16 w-16 mx-auto mb-3 rounded-full bg-muted/50 flex items-center justify-center">
+                <span className="text-2xl">👤</span>
+              </div>
+              <p className="text-sm text-muted-foreground mb-4">
+                {isEn ? "You're using guest mode" : isZh ? "您正在使用访客模式" : "ゲストモードでご利用中"}
+              </p>
+              <Button
+                onClick={() => router.push("/login")}
+                className="w-full rounded-xl text-sm"
+              >
+                {isEn ? "Sign In" : isZh ? "登录" : "ログイン"}
+              </Button>
+            </div>
+          )}
+        </div>
+      </Section>
 
       {/* ── Legal & Privacy ───────────────────────────── */}
       <Section title={isEn ? "Legal & Privacy" : isZh ? "法律与隐私" : "法的事項とプライバシー"}>

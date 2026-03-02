@@ -44,6 +44,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const [mounted, setMounted] = useState(false);
+  const [stable, setStable] = useState(false); // Prevent flashing
 
   // Fetch or upsert profile from Supabase
   const fetchProfile = useCallback(async (u: User) => {
@@ -211,25 +212,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           console.error("Session check failed:", error);
         }
         
-        // Set auth state regardless of success/failure
-        setSession(session || null);
-        setUser(session?.user || null);
-        
-        // Don't fetch profile - just use basic user info to prevent loops
-        if (session?.user) {
-          setProfile({
-            id: session.user.id,
-            email: session.user.email || "",
-            display_name: session.user.email || "User",
-            avatar_url: session.user.user_metadata?.avatar_url || null,
-            role: "user",
-            is_active: true,
-            provider: session.user.app_metadata?.provider || "email",
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-          });
-        } else {
-          setProfile(null);
+        // Set auth state regardless of success/failure (do this only once)
+        if (!stable) {
+          setSession(session || null);
+          setUser(session?.user || null);
+          
+          // Don't fetch profile - just use basic user info to prevent loops
+          if (session?.user) {
+            setProfile({
+              id: session.user.id,
+              email: session.user.email || "",
+              display_name: session.user.email || "User",
+              avatar_url: session.user.user_metadata?.avatar_url || null,
+              role: "user",
+              is_active: true,
+              provider: session.user.app_metadata?.provider || "email",
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+            });
+          } else {
+            setProfile(null);
+          }
+          
+          // Mark as stable to prevent further state changes
+          setStable(true);
         }
         
       } catch (error) {

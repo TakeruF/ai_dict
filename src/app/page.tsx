@@ -81,6 +81,7 @@ export default function Home() {
   const [activeQuery, setActiveQuery] = useState("");  
   // Force loading to end after maximum time (shorter for mobile)
   const [forceLoaded, setForceLoaded] = useState(false);
+  const [initialLoadComplete, setInitialLoadComplete] = useState(false);
   
   useEffect(() => {
     // Mobile gets shorter timeout for faster UX
@@ -91,13 +92,25 @@ export default function Home() {
     const timeoutId = setTimeout(() => {
       console.warn(`Forcing app to load due to timeout (${maxTimeout}ms)`);
       setForceLoaded(true);
+      setInitialLoadComplete(true);
     }, maxTimeout);
     
+    // Also set initial load complete when auth loading finishes naturally
+    if (!authLoading) {
+      const delayId = setTimeout(() => {
+        setInitialLoadComplete(true);
+      }, 200); // Small delay to prevent flash
+      return () => {
+        clearTimeout(timeoutId);
+        clearTimeout(delayId);
+      };
+    }
+    
     return () => clearTimeout(timeoutId);
-  }, []);
+  }, [authLoading]);
   
-  // Consider loading complete if force loaded OR auth is not loading
-  const effectiveLoading = authLoading && !forceLoaded;
+  // Consider loading complete if force loaded OR auth is not loading AND initial load is complete
+  const effectiveLoading = (authLoading && !forceLoaded) || !initialLoadComplete;
   // Swipe gesture refs — avoid re-renders during drag
   const swipeRef    = useRef<HTMLDivElement>(null);
   const tabIdxRef   = useRef(0);
@@ -222,11 +235,18 @@ export default function Home() {
   // Auth: redirect to login if not authenticated
   if (effectiveLoading || !mounted) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-        <p className="text-sm text-muted-foreground mt-2">
-          {forceLoaded ? "認証をスキップして読み込み中..." : "認証処理中..."}
-        </p>
+      <div className="min-h-screen flex flex-col items-center justify-center gap-4 bg-background px-6">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        <div className="text-center">
+          <p className="text-sm font-medium text-foreground mb-1">
+            {forceLoaded ? "ゲストモードで起動中..." : "認証処理中..."}
+          </p>
+          <p className="text-xs text-muted-foreground">
+            {forceLoaded 
+              ? "認証タイムアウトのため、ゲストモードでご利用いただけます" 
+              : "初回起動時は少しお時間をいただく場合があります"}
+          </p>
+        </div>
       </div>
     );
   }
