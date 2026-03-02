@@ -39,24 +39,59 @@ function CallbackHandler() {
         
         if (code) {
           addDebug("PKCEフローでセッション交換中...");
-          const { data, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
           
-          if (exchangeError) {
-            setStatus("認証エラー: " + exchangeError.message);
-            addDebug(`セッション交換エラー: ${exchangeError.message}`);
-            return;
-          }
-          
-          if (data.session && mounted) {
-            addDebug("セッション取得成功、リダイレクト中...");
-            setStatus("ログイン成功！リダイレクト中...");
+          try {
+            // Add timeout to prevent hanging
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => {
+              controller.abort();
+              addDebug("セッション交換がタイムアウトしました");
+            }, 10000); // 10 second timeout
+
+            const exchangePromise = supabase.auth.exchangeCodeForSession(code);
+            const { data, error: exchangeError } = await Promise.race([
+              exchangePromise,
+              new Promise<never>((_, reject) =>
+                setTimeout(() => reject(new Error('セッション交換がタイムアウトしました')), 10000)
+              )
+            ]);
             
-            // Wait a bit for state to settle, then redirect
+            clearTimeout(timeoutId);
+            
+            if (exchangeError) {
+              setStatus("認証エラー: " + exchangeError.message);
+              addDebug(`セッション交換エラー: ${exchangeError.message}`);
+              // Try fallback - redirect to home after delay
+              setTimeout(() => {
+                if (mounted) {
+                  addDebug("フォールバック: ホームページにリダイレクト");
+                  router.push("/");
+                }
+              }, 3000);
+              return;
+            }
+            
+            if (data.session && mounted) {
+              addDebug("セッション取得成功、リダイレクト中...");
+              setStatus("ログイン成功！リダイレクト中...");
+              
+              // Wait a bit for state to settle, then redirect
+              setTimeout(() => {
+                if (mounted) {
+                  router.push("/");
+                }
+              }, 1000);
+              return;
+            }
+          } catch (timeoutError) {
+            const errorMsg = timeoutError instanceof Error ? timeoutError.message : String(timeoutError);
+            addDebug(`セッション交換でタイムアウト: ${errorMsg}`);
+            setStatus("認証処理がタイムアウトしました。ホームページに移動します...");
             setTimeout(() => {
               if (mounted) {
                 router.push("/");
               }
-            }, 1000);
+            }, 3000);
             return;
           }
         }
@@ -102,8 +137,14 @@ function CallbackHandler() {
         // Cleanup after 15s timeout
         const timer = setTimeout(() => {
           if (mounted) {
-            addDebug("タイムアウト発生");
-            setStatus("認証がタイムアウトしました。手動でホームページに戻ってください。");
+            addDebug("認証処理がタイムアウトしました - 自動リダイレクト");
+            setStatus("認証処理がタイムアウトしました。ホームページに移動します...");
+            // Force redirect on timeout
+            setTimeout(() => {
+              if (mounted) {
+                router.push("/");
+              }
+            }, 2000);
           }
         }, 15000);
 

@@ -21,9 +21,23 @@ export const supabase = isSupabaseConfigured
       global: {
         // Set reasonable timeouts to prevent hanging requests
         fetch: (url, options = {}) => {
-          return fetch(url, {
-            ...options,
-            signal: AbortSignal.timeout(10000), // 10 second timeout
+          return new Promise((resolve, reject) => {
+            const controller = new AbortController();
+            const urlString = typeof url === 'string' ? url : url.toString();
+            const timeout = urlString.includes('/auth/') ? 15000 : 10000; // Longer timeout for auth endpoints
+            
+            const timeoutId = setTimeout(() => {
+              controller.abort();
+              reject(new Error('Request timeout'));
+            }, timeout);
+            
+            fetch(url, {
+              ...options,
+              signal: controller.signal,
+            })
+            .then(resolve)
+            .catch(reject)
+            .finally(() => clearTimeout(timeoutId));
           });
         },
       },

@@ -136,4 +136,11 @@ if (typeof window !== 'undefined') {
     getActive: () => loadingDebugger.getActiveLoading(),
     detectLongRunning: (ms?: number) => loadingDebugger.detectLongRunningLoading(ms),
   };
+  
+  // Emergency auth reset function
+  (window as any).emergencyAuthReset = () => {
+    const event = new CustomEvent('emergency-auth-reset');
+    window.dispatchEvent(event);
+    console.warn('Emergency auth reset triggered');
+  };
 }

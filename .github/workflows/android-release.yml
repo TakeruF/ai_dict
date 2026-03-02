@@ -50,7 +50,7 @@ jobs:
         ./gradlew assembleRelease
         
     - name: Sign APK (オプション - キーストアがある場合)
-      if: ${{ secrets.KEYSTORE_FILE != '' }}
+      if: secrets.KEYSTORE_FILE
       run: |
         echo "${{ secrets.KEYSTORE_FILE }}" | base64 -d > android/keystore.jks
         cd android

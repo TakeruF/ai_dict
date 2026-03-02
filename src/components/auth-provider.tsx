@@ -22,6 +22,7 @@ interface AuthContextValue {
   isAdmin: boolean;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
+  forceReset: () => void; // Emergency reset function
 }
 
 const AuthContext = createContext<AuthContextValue>({
@@ -32,6 +33,7 @@ const AuthContext = createContext<AuthContextValue>({
   isAdmin: false,
   signOut: async () => {},
   refreshProfile: async () => {},
+  forceReset: () => {},
 });
 
 // ── Provider ───────────────────────────────────────────────────────
@@ -143,6 +145,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (user) await fetchProfile(user);
   }, [user, fetchProfile]);
 
+  // ── Emergency reset ─────────────────────────────────────────────
+  const forceReset = useCallback(() => {
+    console.warn("Force resetting auth state");
+    setUser(null);
+    setSession(null);
+    setProfile(null);
+    setLoading(false);
+    loadingDebugger.logError('auth', 'force reset triggered');
+  }, []);
+
   // ── Bootstrap ────────────────────────────────────────────────────
   useEffect(() => {
     loadingDebugger.logStart('auth-bootstrap');
@@ -150,15 +162,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Prevent hydration issues by only running auth logic after mount
     setMounted(true);
     
+    // Emergency reset listener
+    const handleEmergencyReset = () => forceReset();
+    if (typeof window !== 'undefined') {
+      window.addEventListener('emergency-auth-reset', handleEmergencyReset);
+    }
+    
     // Skip if Supabase is not properly configured
     if (!isSupabaseConfigured) {
       console.warn("Supabase not configured properly - using local-only mode");
       setLoading(false);
       loadingDebugger.logEnd('auth-bootstrap', 'supabase not configured');
-      return;
+      return () => {
+        if (typeof window !== 'undefined') {
+          window.removeEventListener('emergency-auth-reset', handleEmergencyReset);
+        }
+      };
     }
 
     let mounted = true;
+    let timeoutId: NodeJS.Timeout;
+
+    // Emergency timeout to prevent infinite loading
+    const emergencyTimeout = setTimeout(() => {
+      if (mounted) {
+        console.warn("Auth bootstrap emergency timeout triggered");
+        forceReset();
+        loadingDebugger.logError('auth-bootstrap', 'emergency timeout');
+      }
+    }, 20000); // 20 second emergency timeout
 
     // 1) Load existing session
     loadingDebugger.logStart('auth-session-check');
@@ -180,7 +212,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       
       if (s?.user) {
         loadingDebugger.logStart('auth-fetch-profile');
+        // Add timeout for profile fetching
+        timeoutId = setTimeout(() => {
+          if (mounted) {
+            console.warn("Profile fetch timeout, continuing without profile");
+            setLoading(false);
+            loadingDebugger.logError('auth-fetch-profile', 'timeout');
+          }
+        }, 10000);
+        
         fetchProfile(s.user).finally(() => {
+          clearTimeout(timeoutId);
           if (mounted) {
             setLoading(false);
             loadingDebugger.logEnd('auth-fetch-profile');
@@ -220,9 +262,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     return () => {
       mounted = false;
+      clearTimeout(emergencyTimeout);
+      clearTimeout(timeoutId);
       subscription.unsubscribe();
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('emergency-auth-reset', handleEmergencyReset);
+      }
     };
-  }, [fetchProfile]);
+  }, [fetchProfile, forceReset]);
 
   // ── Sign out ─────────────────────────────────────────────────────
   const signOut = useCallback(async () => {
@@ -238,7 +285,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   if (!mounted) {
     return (
       <AuthContext.Provider
-        value={{ user: null, session: null, profile: null, loading: true, isAdmin: false, signOut, refreshProfile }}
+        value={{ user: null, session: null, profile: null, loading: true, isAdmin: false, signOut, refreshProfile, forceReset }}
       >
         {children}
       </AuthContext.Provider>
@@ -247,7 +294,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   return (
     <AuthContext.Provider
-      value={{ user, session, profile, loading, isAdmin, signOut, refreshProfile }}
+      value={{ user, session, profile, loading, isAdmin, signOut, refreshProfile, forceReset }}
     >
       {children}
     </AuthContext.Provider>
