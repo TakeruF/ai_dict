@@ -50,9 +50,20 @@ export default function LoginPage() {
 
   // If already authenticated, redirect to home
   useEffect(() => {
+    // Shorter timeout to prevent hanging on login screen
     if (!loading && user) {
       window.location.href = "/";
     }
+    
+    // Force redirect after reasonable timeout to prevent infinite loading
+    const timeout = setTimeout(() => {
+      if (user) {
+        console.warn('Forcing redirect to home due to timeout');
+        window.location.href = "/";
+      }
+    }, 3000); // 3 second timeout
+    
+    return () => clearTimeout(timeout);
   }, [loading, user]);
 
   // ── Google OAuth ─────────────────────────────────────────────────
@@ -118,11 +129,14 @@ export default function LoginPage() {
     }
   }
 
-  // Loading state
+  // Loading state - with faster timeout
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
-        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+        <div className="flex flex-col items-center gap-3">
+          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+          <p className="text-sm text-muted-foreground">認証状態を確認中...</p>
+        </div>
       </div>
     );
   }

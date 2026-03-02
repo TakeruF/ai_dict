@@ -1,8 +1,8 @@
 {
-  "version": "0.3.0",
-  "size": "7.9M",
-  "buildDate": "2026-03-02 18:33:12",
-  "filename": "ai-dict.apk",
+  "version": "0.3.2",
+  "size": " 12M",
+  "buildDate": "2026-03-03 08:26:50",
+  "filename": "ai-dict-0.3.2.apk",
   "signed": true,
   "minSdkVersion": 24,
   "targetSdkVersion": 36

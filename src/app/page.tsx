@@ -79,27 +79,25 @@ export default function Home() {
   const [tabIndex, setTabIndex]       = useState(0);
   const [searchInput, setSearchInput] = useState("");
   const [activeQuery, setActiveQuery] = useState("");  
-  // Force loading to end after maximum time (shorter for mobile)
+  // Force loading to end after maximum time (shorter timeout for better UX)
   const [forceLoaded, setForceLoaded] = useState(false);
-  const [initialLoadComplete, setInitialLoadComplete] = useState(false);
   
   useEffect(() => {
-    // Mobile gets shorter timeout for faster UX
+    // Much shorter timeout for better UX - especially important for mobile
     const isMobile = isCapacitor();
-    const maxTimeout = isMobile ? 5000 : 8000; // 5s for mobile, 8s for web
+    const maxTimeout = isMobile ? 2500 : 4000; // 2.5s for mobile, 4s for web
     
-    // Force app to be ready after timeout regardless of auth state
+    // Force app to be ready after shorter timeout
     const timeoutId = setTimeout(() => {
       console.warn(`Forcing app to load due to timeout (${maxTimeout}ms)`);
       setForceLoaded(true);
-      setInitialLoadComplete(true);
     }, maxTimeout);
     
-    // Also set initial load complete when auth loading finishes naturally
+    // Also force load when auth completes naturally (with small delay)
     if (!authLoading) {
       const delayId = setTimeout(() => {
-        setInitialLoadComplete(true);
-      }, 200); // Small delay to prevent flash
+        setForceLoaded(true);
+      }, 100); // Very short delay to prevent flash
       return () => {
         clearTimeout(timeoutId);
         clearTimeout(delayId);
@@ -109,8 +107,8 @@ export default function Home() {
     return () => clearTimeout(timeoutId);
   }, [authLoading]);
   
-  // Consider loading complete if force loaded OR auth is not loading AND initial load is complete
-  const effectiveLoading = (authLoading && !forceLoaded) || !initialLoadComplete;
+  // Simplified loading check - loading only if auth is loading AND not force loaded
+  const isLoading = authLoading && !forceLoaded;
   // Swipe gesture refs — avoid re-renders during drag
   const swipeRef    = useRef<HTMLDivElement>(null);
   const tabIdxRef   = useRef(0);
@@ -232,30 +230,33 @@ export default function Home() {
   }, []);
 
   // ── Guards ────────────────────────────────────────────────────────
-  // Auth: redirect to login if not authenticated
-  if (effectiveLoading || !mounted) {
+  // Show loading during auth process (but only briefly)
+  if (isLoading || !mounted) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center gap-4 bg-background px-6">
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
         <div className="text-center">
           <p className="text-sm font-medium text-foreground mb-1">
-            {forceLoaded ? "ゲストモードで起動中..." : "認証処理中..."}
+            認証処理中...
           </p>
           <p className="text-xs text-muted-foreground">
-            {forceLoaded 
-              ? "認証タイムアウトのため、ゲストモードでご利用いただけます" 
-              : "初回起動時は少しお時間をいただく場合があります"}
+            初回起動時は少しお時間をいただく場合があります
           </p>
         </div>
       </div>
     );
   }
+  
+  // Redirect to login if not authenticated and not in forced guest mode
   if (!user && !forceLoaded) {
     if (typeof window !== "undefined") window.location.href = "/login/";
     return null;
   }
   
-  // Allow access without auth if force loaded (guest mode)
+  // Allow access in guest mode if force loaded (with limited functionality)
+  if (!user && forceLoaded) {
+    console.log('Running in guest mode due to auth timeout');
+  }
   if (lang === null) return <LanguagePicker onSelect={handleLangSelect} />;
 
   const isEn     = lang === "en";

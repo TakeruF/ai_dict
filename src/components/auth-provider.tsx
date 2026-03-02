@@ -165,9 +165,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Always set mounted to true immediately
     setMounted(true);
     
-    // Shorter timeout for mobile environments
+    // Simplified timeout for mobile environments - force faster resolution
     const isMobile = isCapacitor();
-    const maxTimeoutDuration = isMobile ? 3000 : 5000; // 3s for mobile, 5s for web
+    const maxTimeoutDuration = isMobile ? 2000 : 4000; // 2s for mobile, 4s for web
     
     // Force loading to false after maximum timeout regardless of what happens
     const maxTimeout = setTimeout(() => {
@@ -187,65 +187,59 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     let mounted = true;
 
-    // Simple session check with immediate fallback (shorter timeout for mobile)
+    // Simplified session check with faster timeout
     const initAuth = async () => {
       try {
         console.log('Getting initial session...');
         
-        // Race session check against timeout (shorter for mobile)
+        // Much shorter timeout for faster UX
         const sessionPromise = supabase.auth.getSession();
-        const timeoutDuration = isMobile ? 2000 : 3000; // 2s for mobile, 3s for web
+        const timeoutDuration = isMobile ? 1500 : 2500; // 1.5s for mobile, 2.5s for web
         const timeoutPromise = new Promise((_, reject) => 
           setTimeout(() => reject(new Error('Session check timeout')), timeoutDuration)
         );
         
-        const { data: { session }, error } = await Promise.race([
+        const result = await Promise.race([
           sessionPromise,
           timeoutPromise
-        ]) as any;
+        ]);
         
         if (!mounted) return;
         
+        const { data: { session }, error } = result as any;
         console.log('Session check result:', session ? 'found session' : 'no session', error ? `error: ${error.message}` : 'no error');
         
-        if (error) {
-          console.error("Session check failed:", error);
-        }
+        // Set auth state regardless of success/failure
+        setSession(session || null);
+        setUser(session?.user || null);
         
-        // Set auth state regardless of success/failure (do this only once)
-        if (!stable) {
-          setSession(session || null);
-          setUser(session?.user || null);
-          
-          // Don't fetch profile - just use basic user info to prevent loops
-          if (session?.user) {
-            setProfile({
-              id: session.user.id,
-              email: session.user.email || "",
-              display_name: session.user.email || "User",
-              avatar_url: session.user.user_metadata?.avatar_url || null,
-              role: "user",
-              is_active: true,
-              provider: session.user.app_metadata?.provider || "email",
-              created_at: new Date().toISOString(),
-              updated_at: new Date().toISOString(),
-            });
-          } else {
-            setProfile(null);
-          }
-          
-          // Mark as stable to prevent further state changes
-          setStable(true);
+        // Simple profile creation without fetching
+        if (session?.user) {
+          setProfile({
+            id: session.user.id,
+            email: session.user.email || "",
+            display_name: session.user.email || "User",
+            avatar_url: session.user.user_metadata?.avatar_url || null,
+            role: "user",
+            is_active: true,
+            provider: session.user.app_metadata?.provider || "email",
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          });
+        } else {
+          setProfile(null);
         }
         
       } catch (error) {
         console.error("Auth init failed:", error);
-        // Continue with no auth state
-        setSession(null);
-        setUser(null);
-        setProfile(null);
+        // Always set default states to prevent infinite loading
+        if (mounted) {
+          setSession(null);
+          setUser(null);
+          setProfile(null);
+        }
       } finally {
-        // Always end loading after session check
+        // ALWAYS end loading regardless of success/failure
         if (mounted) {
           console.log('Auth initialization complete - setting loading false');
           setLoading(false);

@@ -43,9 +43,12 @@ git tag -a "$VERSION" -m "Release $VERSION
 
 AI Dict Android $VERSION
 
-- Automatic release build
-- APK generated via GitHub Actions
-- Download from: https://github.com/$(git config --get remote.origin.url | sed 's/.*:\/\/github.com\///;s/\.git$//')/releases
+- Infinite loading issue fixed
+- Login screen display improved  
+- Version mismatch resolved
+- APK filename now includes version: ai-dict-${VERSION_NUMBER}.apk
+
+Download from: https://github.com/$(git config --get remote.origin.url | sed 's/.*:\/\/github.com\///;s/\.git$//')/releases
 
 Built: $(date '+%Y-%m-%d %H:%M:%S')
 "

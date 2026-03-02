@@ -15,18 +15,6 @@ interface ReleaseInfo {
   releaseNotes?: string;
 }
 
-interface GitHubRelease {
-  tag_name: string;
-  name: string;
-  body: string;
-  published_at: string;
-  assets: Array<{
-    name: string;
-    size: number;
-    browser_download_url: string;
-  }>;
-}
-
 export default function AndroidDownloadPage() {
   const [releaseInfo, setReleaseInfo] = useState<ReleaseInfo | null>(null);
   const [downloading, setDownloading] = useState(false);
@@ -36,51 +24,40 @@ export default function AndroidDownloadPage() {
   useEffect(() => {
     async function fetchLatestRelease() {
       try {
-        const GITHUB_REPO = 'takeru/ai_dict'; // あなたのリポジトリに変更
-        const GITHUB_API_URL = `https://api.github.com/repos/${GITHUB_REPO}/releases/latest`;
-        
-        // GitHub APIから直接取得
-        const response = await fetch(GITHUB_API_URL, {
+        // ローカルのリリース情報を直接取得
+        const response = await fetch('/releases/release-info.json', {
           headers: {
-            'Accept': 'application/vnd.github.v3+json',
-            'User-Agent': 'AI-Dict-App',
+            'Cache-Control': 'no-cache',
           },
         });
         
         if (!response.ok) {
-          throw new Error(`GitHub API error: ${response.status}`);
+          throw new Error(`Release info fetch error: ${response.status}`);
         }
 
-        const release: GitHubRelease = await response.json();
+        const releaseData = await response.json();
         
-        // APKファイルを探す
-        const apkAsset = release.assets.find(asset => 
-          asset.name.endsWith('.apk')
-        );
-
-        if (apkAsset) {
-          setReleaseInfo({
-            version: release.tag_name.replace(/^v/, ''),
-            size: formatFileSize(apkAsset.size),
-            buildDate: new Date(release.published_at).toLocaleDateString("ja-JP"),
-            filename: apkAsset.name,
-            downloadUrl: apkAsset.browser_download_url,
-            releaseNotes: release.body,
-          });
-        } else {
-          throw new Error('APK file not found in latest release');
-        }
+        setReleaseInfo({
+          version: releaseData.version,
+          size: releaseData.size,
+          buildDate: releaseData.buildDate,
+          filename: releaseData.filename,
+          downloadUrl: `/releases/${releaseData.filename}`,
+          releaseNotes: `バージョン ${releaseData.version} の主な変更点:\n\n• 無限ローディング問題を修正\n• ログイン画面の表示を改善\n• バージョン管理を統一\n• パフォーマンスを向上\n\nファイルサイズ: ${releaseData.size}\nビルド日時: ${releaseData.buildDate}`,
+        });
       } catch (error) {
-        console.error('Failed to fetch release:', error);
+        console.error('Failed to fetch release info:', error);
         setError(error instanceof Error ? error.message : 'Unknown error');
         
-        // フォールバック: ローカルファイル
+        // フォールバック: デフォルト値
+        const version = "0.3.2";
         setReleaseInfo({
-          version: "0.2.0",
+          version,
           size: "~8MB",
           buildDate: new Date().toLocaleDateString("ja-JP"),
-          filename: "ai-dict.apk",
-          downloadUrl: "/releases/ai-dict.apk",
+          filename: `ai-dict-${version}.apk`,
+          downloadUrl: `/releases/ai-dict-${version}.apk`,
+          releaseNotes: `バージョン ${version} のリリースです。`,
         });
       } finally {
         setLoading(false);
@@ -105,10 +82,17 @@ export default function AndroidDownloadPage() {
     
     setDownloading(true);
     try {
-      // GitHub またはローカルファイルにリダイレクト
-      window.open(releaseInfo.downloadUrl, '_blank');
+      // 直接ローカルファイルをダウンロード
+      const link = document.createElement('a');
+      link.href = releaseInfo.downloadUrl;
+      link.download = releaseInfo.filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
     } catch (error) {
       console.error("Download failed:", error);
+      // フォールバック: 新しいタブで開く
+      window.open(releaseInfo.downloadUrl, '_blank');
     } finally {
       setTimeout(() => setDownloading(false), 2000);
     }
@@ -169,7 +153,7 @@ export default function AndroidDownloadPage() {
                     リリース情報の取得に失敗
                   </h3>
                   <p className="text-sm text-amber-700 dark:text-amber-300">
-                    GitHubからの情報取得に失敗しました。ローカルファイルからダウンロードします。
+                    リリース情報の取得に失敗しました。デフォルトの設定でダウンロードできます。
                   </p>
                 </div>
               </div>

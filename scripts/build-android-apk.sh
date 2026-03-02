@@ -23,6 +23,9 @@ cd android
 # Step 4: Copy APK to public releases
 echo "📋 Copying APK to public releases..."
 cd ..
+VERSION=$(jq -r '.version' package.json)
+APK_FILENAME="ai-dict-${VERSION}.apk"
+
 # 署名済みAPKが存在する場合はそれを使用、なければ未署名APKを使用
 if [ -f "android/app/build/outputs/apk/release/app-release.apk" ]; then
   APK_FILE="android/app/build/outputs/apk/release/app-release.apk"
@@ -34,11 +37,10 @@ else
   echo "❌ No APK file found"
   exit 1
 fi
-cp "$APK_FILE" public/releases/ai-dict.apk
+cp "$APK_FILE" "public/releases/${APK_FILENAME}"
 
 # Step 5: Update version info
-VERSION=$(jq -r '.version' package.json)
-APK_SIZE=$(du -h public/releases/ai-dict.apk | cut -f1)
+APK_SIZE=$(du -h "public/releases/${APK_FILENAME}" | cut -f1)
 BUILD_DATE=$(date "+%Y-%m-%d %H:%M:%S")
 
 # Create release info file
@@ -47,11 +49,14 @@ cat > public/releases/release-info.json << EOF
   "version": "$VERSION",
   "size": "$APK_SIZE",
   "buildDate": "$BUILD_DATE",
-  "filename": "ai-dict.apk"
+  "filename": "$APK_FILENAME",
+  "signed": true,
+  "minSdkVersion": 24,
+  "targetSdkVersion": 36
 }
 EOF
 
 echo "✅ APK build completed successfully!"
-echo "📄 APK location: public/releases/ai-dict.apk"
+echo "📄 APK location: public/releases/${APK_FILENAME}"
 echo "📊 APK size: $APK_SIZE"
 echo "🏷️  Version: $VERSION"
