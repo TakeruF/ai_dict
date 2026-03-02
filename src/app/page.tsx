@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { Search, Brain, Clock, BookOpen, Settings, X } from "lucide-react";
+import { Search, Brain, Clock, BookOpen, Settings, X, Loader2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { SearchTab } from "@/components/tabs/search-tab";
 import { MemorizeTab } from "@/components/tabs/memorize-tab";
@@ -11,6 +11,7 @@ import { SettingsTab } from "@/components/tabs/settings-tab";
 import { NativeLanguage, DictionaryDirection } from "@/types/dictionary";
 import { getSettings, saveSettings } from "@/lib/store";
 import { isCapacitor } from "@/hooks/useHaptics";
+import { useAuth } from "@/components/auth-provider";
 
 // ── Tab definitions ─────────────────────────────────────────────────
 const TABS = [
@@ -71,6 +72,7 @@ function LanguagePicker({
 
 // ── Main app ────────────────────────────────────────────────────────
 export default function Home() {
+  const { user, loading: authLoading } = useAuth();
   const [mounted, setMounted]         = useState(false);
   const [lang, setLang]               = useState<NativeLanguage | null>(null);
   const [direction, setDirection]     = useState<DictionaryDirection>("zh-ja");
@@ -184,7 +186,8 @@ export default function Home() {
   const handleSearch = useCallback(() => {
     const q = searchInput.trim();
     if (!q) return;
-    if (!getSettings().apiKey) {
+    const s = getSettings();
+    if (!s.apiKey && !s.invitationCode) {
       setTabIndex(SETTINGS_IDX);
       return;
     }
@@ -198,7 +201,18 @@ export default function Home() {
   }, []);
 
   // ── Guards ────────────────────────────────────────────────────────
-  if (!mounted) return null;
+  // Auth: redirect to login if not authenticated
+  if (authLoading || !mounted) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+  if (!user) {
+    if (typeof window !== "undefined") window.location.href = "/login/";
+    return null;
+  }
   if (lang === null) return <LanguagePicker onSelect={handleLangSelect} />;
 
   const isEn     = lang === "en";

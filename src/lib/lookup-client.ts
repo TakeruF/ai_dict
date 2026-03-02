@@ -162,13 +162,53 @@ const callOpenRouter = (q: string, k: string, p: string) =>
   );
 
 // ── Main export ─────────────────────────────────────────────────────
+// ── Server-proxy lookup (for invitation code users) ─────────────────
+async function lookupViaServer(
+  query: string,
+  nativeLanguage: NativeLanguage,
+  direction: DictionaryDirection,
+  invitationCode: string,
+): Promise<DictionaryEntry> {
+  const res = await fetch("/api/lookup", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ query, invitationCode, nativeLanguage, direction }),
+  });
+
+  const data = await res.json();
+
+  if (!res.ok) {
+    const code = data.error ?? "server_error";
+    const message = data.message ?? code;
+    throw makeError(code, message, res.status);
+  }
+
+  // Handle not_found from server
+  if (data.error === "not_found") {
+    throw makeError("not_found", "not_found");
+  }
+
+  if (!isValidEntry(data)) {
+    throw makeError("server_error", "invalid_shape");
+  }
+
+  return data as DictionaryEntry;
+}
+
+// ── Main export ─────────────────────────────────────────────────────
 export async function lookupWord(
   query: string,
   apiKey: string,
   provider: string,
   nativeLanguage: NativeLanguage,
   direction: DictionaryDirection = "zh-ja",
+  invitationCode?: string,
 ): Promise<DictionaryEntry> {
+  // If invitation code is provided, route through server (API key stays hidden)
+  if (invitationCode) {
+    return lookupViaServer(query, nativeLanguage, direction, invitationCode);
+  }
+
   const cleanKey = sanitizeKey(apiKey);
   if (!cleanKey) throw makeError("missing_api_key", "missing_api_key");
 

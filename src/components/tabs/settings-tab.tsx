@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Eye, EyeOff, Save, Sun, Moon, Monitor } from "lucide-react";
+import { Eye, EyeOff, Save, Sun, Moon, Monitor, Ticket, CheckCircle2, XCircle, LogOut, ShieldCheck } from "lucide-react";
 import { useTheme } from "next-themes";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,6 +11,8 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { AppSettings, getSettings, saveSettings } from "@/lib/store";
 import { NativeLanguage } from "@/types/dictionary";
+import { useAuth } from "@/components/auth-provider";
+import { isCapacitor } from "@/hooks/useHaptics";
 
 const PROVIDER_INFO: Record<
   AppSettings["provider"],
@@ -31,12 +33,60 @@ interface SettingsTabProps {
 export function SettingsTab({ lang, onLangChange }: SettingsTabProps) {
   const isEn = lang === "en";
   const isZh = lang === "zh";
+  const { user, profile, isAdmin, signOut } = useAuth();
   const { theme, setTheme }    = useTheme();
   const [settings, setSettings] = useState<AppSettings>(getSettings());
   const [showKey, setShowKey]   = useState(false);
   const [mounted, setMounted]   = useState(false);
 
+  // Invitation code state
+  const [codeInput, setCodeInput]           = useState(settings.invitationCode);
+  const [codeStatus, setCodeStatus]         = useState<"idle" | "checking" | "valid" | "invalid">(
+    settings.invitationCode ? "valid" : "idle"
+  );
+  const [codeProvider, setCodeProvider]     = useState<string | null>(null);
+
   useEffect(() => { setMounted(true); }, []);
+
+  // ── Validate invitation code against server ──────────────────────
+  const validateCode = async (code: string) => {
+    if (!code.trim()) {
+      setCodeStatus("idle");
+      setCodeProvider(null);
+      return;
+    }
+    setCodeStatus("checking");
+    try {
+      const res = await fetch("/api/validate-code", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code: code.trim() }),
+      });
+      const data = await res.json();
+      if (data.valid) {
+        setCodeStatus("valid");
+        setCodeProvider(data.provider);
+        setSettings((s) => ({ ...s, invitationCode: code.trim(), apiKey: "" }));
+        toast.success(isEn ? "Invitation code verified!" : isZh ? "邀请码验证成功！" : "招待コードが確認されました！");
+      } else {
+        setCodeStatus("invalid");
+        setCodeProvider(null);
+      }
+    } catch {
+      setCodeStatus("invalid");
+      setCodeProvider(null);
+    }
+  };
+
+  const clearInvitationCode = () => {
+    setCodeInput("");
+    setCodeStatus("idle");
+    setCodeProvider(null);
+    setSettings((s) => ({ ...s, invitationCode: "" }));
+    saveSettings({ invitationCode: "" });
+  };
+
+  const hasActiveCode = codeStatus === "valid" && settings.invitationCode;
 
   const handleLangChange = (newLang: NativeLanguage) => {
     setSettings((s) => ({ ...s, nativeLanguage: newLang }));
@@ -55,8 +105,67 @@ export function SettingsTab({ lang, onLangChange }: SettingsTabProps) {
     { value: "system", labelJa: "システム", labelEn: "System", labelZh: "系统", Icon: Monitor },
   ] as const;
 
+  const handleSignOut = async () => {
+    await signOut();
+    window.location.href = "/login/";
+  };
+
   return (
     <div className="flex flex-col gap-6">
+
+      {/* ── Account ───────────────────────────────────── */}
+      {user && (
+        <Section title={isEn ? "Account" : isZh ? "账户" : "アカウント"}>
+          <div className="space-y-3">
+            <div className="flex items-center gap-3">
+              {profile?.avatar_url ? (
+                <img
+                  src={profile.avatar_url}
+                  alt=""
+                  className="h-10 w-10 rounded-full object-cover shrink-0"
+                />
+              ) : (
+                <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                  <span className="text-sm font-medium text-primary">
+                    {(profile?.display_name ?? user.email ?? "?")[0]?.toUpperCase()}
+                  </span>
+                </div>
+              )}
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium truncate">
+                  {profile?.display_name ?? user.email}
+                </p>
+                <p className="text-xs text-muted-foreground truncate">{user.email}</p>
+              </div>
+              {isAdmin && (
+                <Badge variant="outline" className="text-[10px] text-amber-600 border-amber-300 dark:text-amber-400 dark:border-amber-700 shrink-0">
+                  {isEn ? "Admin" : isZh ? "管理员" : "管理者"}
+                </Badge>
+              )}
+            </div>
+
+            {/* Admin page link — web only */}
+            {isAdmin && !isCapacitor() && (
+              <button
+                onClick={() => (window.location.href = "/admin/")}
+                className="w-full flex items-center gap-2 rounded-xl border border-amber-200/60 dark:border-amber-800/40 bg-amber-50/60 dark:bg-amber-900/20 px-3 py-2.5 text-sm font-medium text-amber-700 dark:text-amber-300 hover:bg-amber-100/60 dark:hover:bg-amber-900/30 transition-colors"
+              >
+                <ShieldCheck className="h-4 w-4" />
+                {isEn ? "Admin Dashboard" : isZh ? "管理面板" : "管理者ダッシュボード"}
+              </button>
+            )}
+
+            <Button
+              variant="outline"
+              onClick={handleSignOut}
+              className="w-full rounded-xl text-sm"
+            >
+              <LogOut className="h-4 w-4 mr-2" />
+              {isEn ? "Sign Out" : isZh ? "退出登录" : "ログアウト"}
+            </Button>
+          </div>
+        </Section>
+      )}
 
       {/* ── Interface language ────────────────────────── */}
       <Section title={isEn ? "Interface Language" : lang === "zh" ? "界面语言" : "表示言語"}>
@@ -82,8 +191,79 @@ export function SettingsTab({ lang, onLangChange }: SettingsTabProps) {
         </div>
       </Section>
 
+      {/* ── Invitation Code ───────────────────────────── */}
+      <Section title={isEn ? "Invitation Code" : isZh ? "邀请码" : "招待コード"}>
+        <div className="space-y-3">
+          {hasActiveCode ? (
+            /* Active invitation code display */
+            <div className="flex items-center gap-3 rounded-xl bg-emerald-50/80 dark:bg-emerald-900/20 border border-emerald-200/60 dark:border-emerald-800/40 px-3 py-3">
+              <CheckCircle2 className="h-5 w-5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-emerald-800 dark:text-emerald-300">
+                  {isEn ? "Active" : isZh ? "已激活" : "有効"}
+                </p>
+                <p className="text-xs text-emerald-600/80 dark:text-emerald-400/70 font-mono truncate">
+                  {settings.invitationCode}
+                  {codeProvider && <span className="ml-2 text-emerald-500">({codeProvider})</span>}
+                </p>
+              </div>
+              <button
+                onClick={clearInvitationCode}
+                className="text-xs text-emerald-600/70 hover:text-red-500 dark:text-emerald-400/60 dark:hover:text-red-400 transition-colors"
+              >
+                {isEn ? "Remove" : isZh ? "移除" : "削除"}
+              </button>
+            </div>
+          ) : (
+            /* Code input */
+            <>
+              <div className="flex gap-2">
+                <div className="relative flex-1">
+                  <Ticket className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+                  <Input
+                    value={codeInput}
+                    onChange={(e) => {
+                      setCodeInput(e.target.value);
+                      if (codeStatus === "invalid") setCodeStatus("idle");
+                    }}
+                    onKeyDown={(e) => e.key === "Enter" && validateCode(codeInput)}
+                    placeholder={isEn ? "Enter invitation code…" : isZh ? "输入邀请码…" : "招待コードを入力…"}
+                    className={`pl-9 text-sm rounded-xl border-border/60 font-mono ${
+                      codeStatus === "invalid" ? "border-red-400 focus-visible:ring-red-300" : ""
+                    }`}
+                  />
+                </div>
+                <Button
+                  onClick={() => validateCode(codeInput)}
+                  disabled={!codeInput.trim() || codeStatus === "checking"}
+                  size="sm"
+                  className="rounded-xl px-4"
+                >
+                  {codeStatus === "checking"
+                    ? (isEn ? "Checking…" : isZh ? "验证中…" : "確認中…")
+                    : (isEn ? "Verify" : isZh ? "验证" : "確認")}
+                </Button>
+              </div>
+              {codeStatus === "invalid" && (
+                <div className="flex items-center gap-2 text-xs text-red-500">
+                  <XCircle className="h-3.5 w-3.5 shrink-0" />
+                  {isEn ? "Invalid invitation code" : isZh ? "无效的邀请码" : "招待コードが無効です"}
+                </div>
+              )}
+            </>
+          )}
+          <p className="text-[11px] text-muted-foreground leading-relaxed">
+            {isEn
+              ? "If you have an invitation code, enter it above. No API key needed."
+              : isZh
+                ? "如果你有邀请码，请在上方输入。无需 API 密钥。"
+                : "招待コードをお持ちの場合は上に入力してください。APIキーは不要です。"}
+          </p>
+        </div>
+      </Section>
+
       {/* ── API settings ──────────────────────────────── */}
-      <Section title={isEn ? "API Settings" : isZh ? "API设置" : "API設定"}>
+      {!hasActiveCode && <Section title={isEn ? "API Settings" : isZh ? "API设置" : "API設定"}>
         <div className="space-y-4">
           {/* Provider selector */}
           <div className="flex flex-col gap-2">
@@ -185,7 +365,7 @@ export function SettingsTab({ lang, onLangChange }: SettingsTabProps) {
             </p>
           </div>
         </div>
-      </Section>
+      </Section>}
 
       {/* ── Theme ─────────────────────────────────────── */}
       <Section title={isEn ? "Theme" : isZh ? "主题" : "テーマ"}>

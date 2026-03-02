@@ -3,6 +3,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { getSystemPrompt, buildUserPrompt } from "@/lib/prompt";
 import { DictionaryEntry, NativeLanguage, DictionaryDirection } from "@/types/dictionary";
+import { resolveInvitationCode } from "@/lib/invitation-codes";
 
 // ── Type guard ─────────────────────────────────────────────────────
 function isValidEntry(data: unknown): data is DictionaryEntry {
@@ -219,19 +220,33 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const query: string = (body.query ?? "").trim();
     const rawKey: string = body.apiKey ?? "";
-    const provider: string = body.provider ?? "anthropic";
-    const nativeLanguage: NativeLanguage = body.nativeLanguage === "en" ? "en" : "ja";
+    const invitationCode: string = (body.invitationCode ?? "").trim();
+    const nativeLanguage: NativeLanguage = body.nativeLanguage === "en" ? "en" : body.nativeLanguage === "zh" ? "zh" : "ja";
     const direction: DictionaryDirection = body.direction ?? "zh-ja";
 
     if (!query) {
       return NextResponse.json({ error: "empty_query" }, { status: 400 });
     }
 
-    // Sanitize: strip invisible Unicode that breaks HTTP ByteString encoding
-    const apiKey = sanitizeKey(rawKey);
+    // ── Resolve API key: invitation code takes priority ────────────
+    let apiKey: string;
+    let provider: string;
 
-    if (!apiKey) {
-      return NextResponse.json({ error: "missing_api_key" }, { status: 401 });
+    if (invitationCode) {
+      const resolved = resolveInvitationCode(invitationCode);
+      if (!resolved) {
+        return NextResponse.json({ error: "invalid_invitation_code" }, { status: 401 });
+      }
+      apiKey = resolved.apiKey;
+      provider = resolved.provider;
+    } else {
+      // Sanitize: strip invisible Unicode that breaks HTTP ByteString encoding
+      apiKey = sanitizeKey(rawKey);
+      provider = body.provider ?? "anthropic";
+
+      if (!apiKey) {
+        return NextResponse.json({ error: "missing_api_key" }, { status: 401 });
+      }
     }
 
     const systemPrompt = getSystemPrompt(nativeLanguage, direction);

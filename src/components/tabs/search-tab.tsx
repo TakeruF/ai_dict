@@ -46,14 +46,14 @@ export function SearchTab({ lang, direction, query, onNavigate }: SearchTabProps
   const effectiveDirection = isZh ? detectLanguage(query) : direction;
 
   const { data, isFetching, isError, error, isSuccess } = useQuery({
-    queryKey: ["lookup", query, settings.provider, lang, effectiveDirection, settings.apiKey.slice(0, 8)],
-    queryFn:  () => lookupWord(query, settings.apiKey, settings.provider, lang, effectiveDirection),
+    queryKey: ["lookup", query, settings.provider, lang, effectiveDirection, settings.apiKey.slice(0, 8), settings.invitationCode ? "invite" : "key"],
+    queryFn:  () => lookupWord(query, settings.apiKey, settings.provider, lang, effectiveDirection, settings.invitationCode || undefined),
     enabled:  query.length > 0,
     // Errors from lookupWord already have .code attached; propagate as-is
     retry:    (failCount, err) => {
       const code = (err as { code?: string }).code;
       // Don't retry auth / not-found errors
-      if (code === "invalid_api_key" || code === "missing_api_key" || code === "not_found") return false;
+      if (code === "invalid_api_key" || code === "missing_api_key" || code === "not_found" || code === "invalid_invitation_code") return false;
       return failCount < 1;
     },
   });
@@ -179,16 +179,19 @@ function ErrorCard({
   const isNotFound    = code === "not_found";
   const isKeyMissing  = code === "missing_api_key";
   const isInvalidKey  = code === "invalid_api_key";
+  const isInvalidCode = code === "invalid_invitation_code";
   const isRateLimited = code === "rate_limited";
   const isNoBal       = code === "insufficient_balance";
 
   const title = isNotFound     ? (isEn ? "Word not found"           : isZh ? "未找到单词" : "単語が見つかりませんでした")
+    : isInvalidCode              ? (isEn ? "Invalid invitation code"   : isZh ? "无效的邀请码" : "招待コードが無効です")
     : isKeyMissing || isInvalidKey ? (isEn ? "API key issue"          : isZh ? "API 密钥问题" : "APIキーに問題があります")
     : isRateLimited              ? (isEn ? "Rate limit exceeded"      : isZh ? "速率限制已超出" : "レート制限 / クォータ超過")
     : isNoBal                    ? (isEn ? "Insufficient balance"     : isZh ? "余额不足" : "残高不足")
     :                              (isEn ? "An error occurred"        : isZh ? "发生了错误" : "エラーが発生しました");
 
   const detail = isNotFound     ? (isEn ? "Check your input and try again." : isZh ? "检查您的输入并重试。" : "入力を確認して再試行してください。")
+    : isInvalidCode              ? (isEn ? "Your invitation code is invalid or expired. Check Settings." : isZh ? "您的邀请码无效或已过期。请检查设置。" : "招待コードが無効または期限切れです。設定を確認してください。")
     : isKeyMissing               ? (isEn ? "Please add your API key in Settings." : isZh ? "请在设置中添加您的 API 密钥。" : "設定タブでAPIキーを追加してください。")
     : isInvalidKey               ? (isEn ? "Invalid API key. Check Settings."     : isZh ? "API 密钥无效。检查设置。" : "APIキーが無効です。設定タブで確認してください。")
     : isRateLimited              ? (isEn ? "Too many requests. Wait and retry."    : isZh ? "请求过多。请等待并重试。" : "リクエスト数が上限に達しました。しばらくお待ちください。")
@@ -196,7 +199,7 @@ function ErrorCard({
     :                              error.message;
 
   const billingLink    = BILLING_LINKS[provider];
-  const showSettingsBtn = isKeyMissing || isInvalidKey;
+  const showSettingsBtn = isKeyMissing || isInvalidKey || isInvalidCode;
   const isBillingError  = isNoBal || isRateLimited;
 
   return (

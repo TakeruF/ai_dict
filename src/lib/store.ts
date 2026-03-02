@@ -122,6 +122,7 @@ export function reviewFlashCard(id: string, result: FlashCardResult): void {
 // ── Settings ───────────────────────────────────────────────────────
 export interface AppSettings {
   apiKey: string;
+  invitationCode: string;
   provider: "anthropic" | "openai" | "gemini" | "deepseek" | "openrouter";
   theme: "light" | "dark" | "system";
   autoAddToFlashcards: boolean;
@@ -130,6 +131,7 @@ export interface AppSettings {
 
 const DEFAULT_SETTINGS: AppSettings = {
   apiKey: "",
+  invitationCode: "",
   provider: "anthropic",
   theme: "system",
   autoAddToFlashcards: true,
