@@ -23,7 +23,18 @@ cd android
 # Step 4: Copy APK to public releases
 echo "📋 Copying APK to public releases..."
 cd ..
-cp android/app/build/outputs/apk/release/app-release-unsigned.apk public/releases/ai-dict.apk
+# 署名済みAPKが存在する場合はそれを使用、なければ未署名APKを使用
+if [ -f "android/app/build/outputs/apk/release/app-release.apk" ]; then
+  APK_FILE="android/app/build/outputs/apk/release/app-release.apk"
+  echo "✅ Found signed APK: $APK_FILE"
+elif [ -f "android/app/build/outputs/apk/release/app-release-unsigned.apk" ]; then
+  APK_FILE="android/app/build/outputs/apk/release/app-release-unsigned.apk"
+  echo "⚠️  Found unsigned APK: $APK_FILE"
+else
+  echo "❌ No APK file found"
+  exit 1
+fi
+cp "$APK_FILE" public/releases/ai-dict.apk
 
 # Step 5: Update version info
 VERSION=$(jq -r '.version' package.json)
