@@ -287,7 +287,11 @@ export default function Home() {
                 {isEn ? "Mobile App" : isZh ? "手机应用" : "モバイルアプリ"}
               </h3>
               <button
-                onClick={() => window.open('/android-download', '_blank')}
+                onClick={() => {
+                  if (typeof window !== 'undefined') {
+                    window.open('/android-download', '_blank');
+                  }
+                }}
                 className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-colors bg-green-50 hover:bg-green-100 dark:bg-green-900/20 dark:hover:bg-green-900/30 text-green-700 dark:text-green-300 border border-green-200 dark:border-green-800"
               >
                 <svg className="h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">

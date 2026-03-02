@@ -44,7 +44,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
   
-  // Setup Capacitor auth handling
+  // Setup Capacitor auth handling (safe for web)
   useCapacitorAuth();
   const handleCapacitorGoogleAuth = useCapacitorGoogleAuth();
 
@@ -57,17 +57,22 @@ export default function LoginPage() {
 
   // ── Google OAuth ─────────────────────────────────────────────────
   async function handleGoogleLogin() {
-    if (isCapacitor()) {
-      const { error } = await handleCapacitorGoogleAuth();
-      if (error) toast.error(error.message);
-    } else {
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: "google",
-        options: {
-          redirectTo: `${window.location.origin}/auth/callback/`,
-        },
-      });
-      if (error) toast.error(error.message);
+    try {
+      if (isCapacitor()) {
+        const { error } = await handleCapacitorGoogleAuth();
+        if (error) toast.error(error.message);
+      } else {
+        const { error } = await supabase.auth.signInWithOAuth({
+          provider: "google",
+          options: {
+            redirectTo: `${window.location.origin}/auth/callback/`,
+          },
+        });
+        if (error) toast.error(error.message);
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "認証エラーが発生しました";
+      toast.error(message);
     }
   }
 
@@ -79,9 +84,9 @@ export default function LoginPage() {
     setSubmitting(true);
     try {
       if (mode === "signup") {
-        const redirectTo = isCapacitor() 
+        const redirectTo = (typeof window !== 'undefined' && isCapacitor()) 
           ? "com.aidict.app://auth/callback/" 
-          : `${window.location.origin}/auth/callback/`;
+          : (typeof window !== 'undefined' ? `${window.location.origin}/auth/callback/` : "");
           
         const { error } = await supabase.auth.signUp({
           email: email.trim(),
@@ -101,7 +106,9 @@ export default function LoginPage() {
           password,
         });
         if (error) throw error;
-        window.location.href = "/";
+        if (typeof window !== 'undefined') {
+          window.location.href = "/";
+        }
       }
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "認証エラー";

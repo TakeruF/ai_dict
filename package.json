@@ -2,6 +2,11 @@
   "name": "ai-dict",
   "version": "0.1.0",
   "private": true,
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/takeru/ai_dict.git"
+  },
+  "homepage": "https://aidict.me",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -17,7 +22,12 @@
     "android:sync": "npx cap sync android",
     "android:release": "npm run export && npx cap sync android && cd android && ./gradlew assembleRelease",
     "apk:build": "./scripts/build-android-apk.sh",
-    "apk:deploy": "npm run apk:build && echo 'APK ready for download at /releases/ai-dict.apk'"
+    "apk:deploy": "npm run apk:build && echo 'APK ready for download at /releases/ai-dict.apk'",
+    "release:create": "./scripts/create-release.sh",
+    "release:beta": "./scripts/create-release.sh v$(jq -r '.version' package.json)-beta",
+    "release:patch": "npm version patch && ./scripts/create-release.sh v$(jq -r '.version' package.json)",
+    "release:minor": "npm version minor && ./scripts/create-release.sh v$(jq -r '.version' package.json)",
+    "release:major": "npm version major && ./scripts/create-release.sh v$(jq -r '.version' package.json)"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.78.0",

@@ -1,0 +1,113 @@
+name: Build and Release Android APK
+
+on:
+  push:
+    tags:
+      - 'v*'  # v1.0.0, v1.1.0 等のタグでトリガー
+  workflow_dispatch:  # 手動実行も可能
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+        
+    - name: Setup Java JDK
+      uses: actions/setup-java@v4
+      with:
+        java-version: '17'
+        distribution: 'temurin'
+        
+    - name: Setup Android SDK
+      uses: android-actions/setup-android@v3
+      
+    - name: Install dependencies
+      run: npm ci
+      
+    - name: Build Next.js for production
+      run: npm run export
+      env:
+        NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+        NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+        
+    - name: Sync Capacitor
+      run: npx cap sync android
+      
+    - name: Grant execute permission for gradlew
+      run: chmod +x android/gradlew
+      
+    - name: Build Android APK
+      run: |
+        cd android
+        ./gradlew assembleRelease
+        
+    - name: Sign APK (オプション - キーストアがある場合)
+      if: ${{ secrets.KEYSTORE_FILE }}
+      run: |
+        echo "${{ secrets.KEYSTORE_FILE }}" | base64 -d > android/keystore.jks
+        cd android
+        ./gradlew assembleRelease \
+          -Pandroid.injected.signing.store.file=keystore.jks \
+          -Pandroid.injected.signing.store.password="${{ secrets.KEYSTORE_PASSWORD }}" \
+          -Pandroid.injected.signing.key.alias="${{ secrets.KEY_ALIAS }}" \
+          -Pandroid.injected.signing.key.password="${{ secrets.KEY_PASSWORD }}"
+          
+    - name: Rename APK
+      run: |
+        TAG_NAME=${GITHUB_REF#refs/tags/}
+        mv android/app/build/outputs/apk/release/app-release.apk ai-dict-${TAG_NAME}.apk
+        
+    - name: Get release info
+      id: release_info
+      run: |
+        TAG_NAME=${GITHUB_REF#refs/tags/}
+        APK_PATH="ai-dict-${TAG_NAME}.apk"
+        APK_SIZE=$(stat -f%z "$APK_PATH" 2>/dev/null || stat -c%s "$APK_PATH")
+        echo "tag_name=$TAG_NAME" >> $GITHUB_OUTPUT
+        echo "apk_path=$APK_PATH" >> $GITHUB_OUTPUT
+        echo "apk_size=$APK_SIZE" >> $GITHUB_OUTPUT
+        
+    - name: Create Release
+      uses: softprops/action-gh-release@v2
+      with:
+        tag_name: ${{ steps.release_info.outputs.tag_name }}
+        name: AI Dict ${{ steps.release_info.outputs.tag_name }}
+        body: |
+          ## AI Dict Android - ${{ steps.release_info.outputs.tag_name }}
+          
+          ### 📱 インストール方法
+          1. APKファイルをダウンロード
+          2. 「提供元不明のアプリ」を許可
+          3. APKをタップしてインストール
+          
+          ### 📊 ファイル情報
+          - **サイズ**: ${{ steps.release_info.outputs.apk_size }} bytes
+          - **ビルド日**: $(date '+%Y-%m-%d %H:%M:%S UTC')
+          - **対応OS**: Android 7.0+
+          
+          ### ⚠️ 重要な注意事項
+          - これはBeta版です
+          - Google Play外からのインストールのため、セキュリティリスクをご理解の上ご利用ください
+          - 問題がある場合はブラウザ版（https://aidict.me）をご利用ください
+          
+        files: |
+          ${{ steps.release_info.outputs.apk_path }}
+        generate_release_notes: true
+        prerelease: ${{ contains(steps.release_info.outputs.tag_name, 'beta') || contains(steps.release_info.outputs.tag_name, 'alpha') }}
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        
+    - name: Update latest release info
+      run: |
+        echo "✅ APK successfully built and released!"
+        echo "📦 File: ${{ steps.release_info.outputs.apk_path }}"
+        echo "🏷️ Tag: ${{ steps.release_info.outputs.tag_name }}"
+        echo "📊 Size: ${{ steps.release_info.outputs.apk_size }} bytes"

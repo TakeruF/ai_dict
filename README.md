@@ -1,10 +1,28 @@
 # AI Dict — 中日 AI 辞書
 
+AI-powered Chinese-Japanese dictionary with intelligent lookup, translation, and learning features.
+
 ## ⚠️ Development Status
 
-- **Web (Next.js)**: Active development
-- **Android (Capacitor)**: Active development
-- **iOS (In Progress)**: Development in progress - Features and UI are subject to change
+- **Web (Next.js)**: Active development ✅
+- **Android (Capacitor)**: Active development ✅ 
+- **iOS (Capacitor)**: Development in progress 🚧
+
+## 📱 Download Android App
+
+**Beta APK available**: Download from GitHub Releases or website
+- Visit: [GitHub Releases](https://github.com/takeru/ai_dict/releases) 
+- Or use the download button on [aidict.me](https://aidict.me)
+- **Auto-updates**: New releases are automatically built and published
+
+## 🚀 Features
+
+- **AI-Powered Search**: Intelligent Chinese-Japanese word lookup
+- **Real-time Translation**: Context-aware translations and example sentences
+- **HSK Vocabulary**: Structured learning by HSK levels (1-6)
+- **Learning History**: Track your study progress
+- **Multi-platform**: Web browser + Android app
+- **Authentication**: Google OAuth + email login with invitation codes
 
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 

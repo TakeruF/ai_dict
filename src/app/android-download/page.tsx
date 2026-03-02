@@ -11,39 +11,107 @@ interface ReleaseInfo {
   size: string;
   buildDate: string;
   filename: string;
+  downloadUrl: string;
+  releaseNotes?: string;
+}
+
+interface GitHubRelease {
+  tag_name: string;
+  name: string;
+  body: string;
+  published_at: string;
+  assets: Array<{
+    name: string;
+    size: number;
+    browser_download_url: string;
+  }>;
 }
 
 export default function AndroidDownloadPage() {
   const [releaseInfo, setReleaseInfo] = useState<ReleaseInfo | null>(null);
   const [downloading, setDownloading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // Try to fetch release info
-    fetch("/releases/release-info.json")
-      .then(res => res.json())
-      .then(setReleaseInfo)
-      .catch(() => {
-        // Fallback if file doesn't exist
+    async function fetchLatestRelease() {
+      try {
+        const GITHUB_REPO = 'takeru/ai_dict'; // あなたのリポジトリに変更
+        const GITHUB_API_URL = `https://api.github.com/repos/${GITHUB_REPO}/releases/latest`;
+        
+        // GitHub APIから直接取得
+        const response = await fetch(GITHUB_API_URL, {
+          headers: {
+            'Accept': 'application/vnd.github.v3+json',
+            'User-Agent': 'AI-Dict-App',
+          },
+        });
+        
+        if (!response.ok) {
+          throw new Error(`GitHub API error: ${response.status}`);
+        }
+
+        const release: GitHubRelease = await response.json();
+        
+        // APKファイルを探す
+        const apkAsset = release.assets.find(asset => 
+          asset.name.endsWith('.apk')
+        );
+
+        if (apkAsset) {
+          setReleaseInfo({
+            version: release.tag_name.replace(/^v/, ''),
+            size: formatFileSize(apkAsset.size),
+            buildDate: new Date(release.published_at).toLocaleDateString("ja-JP"),
+            filename: apkAsset.name,
+            downloadUrl: apkAsset.browser_download_url,
+            releaseNotes: release.body,
+          });
+        } else {
+          throw new Error('APK file not found in latest release');
+        }
+      } catch (error) {
+        console.error('Failed to fetch release:', error);
+        setError(error instanceof Error ? error.message : 'Unknown error');
+        
+        // フォールバック: ローカルファイル
         setReleaseInfo({
           version: "0.2.0",
           size: "~8MB",
           buildDate: new Date().toLocaleDateString("ja-JP"),
-          filename: "ai-dict.apk"
+          filename: "ai-dict.apk",
+          downloadUrl: "/releases/ai-dict.apk",
         });
-      });
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchLatestRelease();
   }, []);
 
+  const formatFileSize = (bytes: number): string => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  };
+
   const handleDownload = () => {
-    setDownloading(true);
-    // Create download link
-    const link = document.createElement("a");
-    link.href = "/releases/ai-dict.apk";
-    link.download = "ai-dict.apk";
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    if (!releaseInfo || typeof window === 'undefined' || typeof document === 'undefined') {
+      return;
+    }
     
-    setTimeout(() => setDownloading(false), 2000);
+    setDownloading(true);
+    try {
+      // GitHub またはローカルファイルにリダイレクト
+      window.open(releaseInfo.downloadUrl, '_blank');
+    } catch (error) {
+      console.error("Download failed:", error);
+    } finally {
+      setTimeout(() => setDownloading(false), 2000);
+    }
   };
 
   return (
@@ -55,7 +123,11 @@ export default function AndroidDownloadPage() {
             variant="ghost"
             size="sm"
             className="rounded-xl"
-            onClick={() => window.history.back()}
+            onClick={() => {
+              if (typeof window !== 'undefined') {
+                window.history.back();
+              }
+            }}
           >
             <ArrowLeft className="h-4 w-4 mr-2" />
             戻る
@@ -69,7 +141,44 @@ export default function AndroidDownloadPage() {
 
       <div className="max-w-4xl mx-auto px-6 py-8 space-y-8">
         
+        {/* Loading State */}
+        {loading && (
+          <Card className="rounded-2xl border-border/60">
+            <CardContent className="p-6">
+              <div className="flex items-center gap-4">
+                <div className="animate-pulse p-3 rounded-xl bg-primary/10">
+                  <Download className="h-6 w-6 text-primary" />
+                </div>
+                <div className="flex-1">
+                  <div className="h-6 bg-muted/60 rounded mb-2 animate-pulse"></div>
+                  <div className="h-4 bg-muted/40 rounded w-2/3 animate-pulse"></div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Error State */}
+        {error && !loading && (
+          <Card className="rounded-2xl border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-900/20">
+            <CardContent className="p-6">
+              <div className="flex gap-3">
+                <AlertTriangle className="h-5 w-5 text-amber-600 dark:text-amber-400 mt-0.5 shrink-0" />
+                <div>
+                  <h3 className="font-medium text-amber-800 dark:text-amber-200 mb-2">
+                    リリース情報の取得に失敗
+                  </h3>
+                  <p className="text-sm text-amber-700 dark:text-amber-300">
+                    GitHubからの情報取得に失敗しました。ローカルファイルからダウンロードします。
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Download Card */}
+        {releaseInfo && !loading && (
         <Card className="rounded-2xl border-border/60">
           <CardContent className="p-6">
             <div className="flex items-start gap-4">
@@ -119,6 +228,22 @@ export default function AndroidDownloadPage() {
             </div>
           </CardContent>
         </Card>
+        )}
+
+        {/* Release Notes */}
+        {releaseInfo?.releaseNotes && !loading && (
+          <Card className="rounded-2xl border-border/60">
+            <CardContent className="p-6">
+              <div className="flex items-center gap-3 mb-4">
+                <Info className="h-5 w-5 text-primary" />
+                <h3 className="font-semibold">リリースノート</h3>
+              </div>
+              <div className="text-sm text-muted-foreground whitespace-pre-wrap">
+                {releaseInfo.releaseNotes}
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Security Warning */}
         <Card className="rounded-2xl border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-900/20">

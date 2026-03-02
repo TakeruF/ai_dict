@@ -42,19 +42,34 @@ export function useCapacitorAuth() {
   }, []);
 
   useEffect(() => {
-    if (!isCapacitor()) return;
+    // Skip if not in Capacitor environment
+    if (typeof window === 'undefined' || !isCapacitor()) {
+      return;
+    }
 
-    // Dynamically import Capacitor App plugin only on mobile
     let listener: any = null;
+    let mounted = true;
     
-    import('@capacitor/app').then(({ App }) => {
-      listener = App.addListener("appUrlOpen", handleAppUrlOpen);
-    }).catch(error => {
-      console.warn("Failed to load Capacitor App plugin:", error);
-    });
+    // Dynamically import Capacitor App plugin only on mobile
+    const setupCapacitorListener = async () => {
+      try {
+        const { App } = await import('@capacitor/app');
+        if (mounted && App) {
+          listener = App.addListener("appUrlOpen", handleAppUrlOpen);
+        }
+      } catch (error) {
+        // Silently ignore import errors in non-Capacitor environments
+        console.debug("Capacitor App plugin not available:", error);
+      }
+    };
+
+    setupCapacitorListener();
 
     return () => {
-      listener?.remove();
+      mounted = false;
+      if (listener) {
+        listener.remove?.();
+      }
     };
   }, [handleAppUrlOpen]);
 }
@@ -64,25 +79,35 @@ export function useCapacitorAuth() {
  */
 export function useCapacitorGoogleAuth() {
   return useCallback(async () => {
-    if (!isCapacitor()) {
-      // Fallback to web OAuth
+    try {
+      // Check if we're in a browser environment
+      if (typeof window === 'undefined') {
+        return { error: new Error('Not in browser environment') };
+      }
+
+      if (!isCapacitor()) {
+        // Fallback to web OAuth
+        const { error } = await supabase.auth.signInWithOAuth({
+          provider: "google",
+          options: {
+            redirectTo: `${window.location.origin}/auth/callback/`,
+          },
+        });
+        return { error };
+      }
+
+      // Capacitor OAuth with deep link redirect
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: {
-          redirectTo: `${window.location.origin}/auth/callback/`,
+          redirectTo: "com.aidict.app://auth/callback/",
         },
       });
+      
       return { error };
+    } catch (error) {
+      console.error("Google auth error:", error);
+      return { error: error instanceof Error ? error : new Error('Unknown auth error') };
     }
-
-    // Capacitor OAuth with deep link redirect
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: {
-        redirectTo: "com.aidict.app://auth/callback/",
-      },
-    });
-    
-    return { error };
   }, []);
 }
