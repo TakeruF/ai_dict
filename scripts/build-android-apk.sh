@@ -23,7 +23,7 @@ cd android
 # Step 4: Copy APK to public releases
 echo "📋 Copying APK to public releases..."
 cd ..
-cp android/app/build/outputs/apk/release/app-release.apk public/releases/ai-dict.apk
+cp android/app/build/outputs/apk/release/app-release-unsigned.apk public/releases/ai-dict.apk
 
 # Step 5: Update version info
 VERSION=$(jq -r '.version' package.json)

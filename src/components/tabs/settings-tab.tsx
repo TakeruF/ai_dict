@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Eye, EyeOff, Save, Sun, Moon, Monitor, Ticket, CheckCircle2, XCircle, LogOut, ShieldCheck } from "lucide-react";
+import { Eye, EyeOff, Save, Sun, Moon, Monitor, Ticket, CheckCircle2, XCircle, LogOut, ShieldCheck, FileText, Lock } from "lucide-react";
 import { useTheme } from "next-themes";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
@@ -35,6 +36,7 @@ export function SettingsTab({ lang, onLangChange }: SettingsTabProps) {
   const isZh = lang === "zh";
   const { user, profile, isAdmin, signOut } = useAuth();
   const { theme, setTheme }    = useTheme();
+  const router = useRouter();
   const [settings, setSettings] = useState<AppSettings>(getSettings());
   const [showKey, setShowKey]   = useState(false);
   const [mounted, setMounted]   = useState(false);
@@ -166,6 +168,41 @@ export function SettingsTab({ lang, onLangChange }: SettingsTabProps) {
           </div>
         </Section>
       )}
+
+      {/* ── Legal & Privacy ───────────────────────────── */}
+      <Section title={isEn ? "Legal & Privacy" : isZh ? "法律与隐私" : "法的事項とプライバシー"}>
+        <div className="space-y-3">
+          <button
+            onClick={() => router.push("/privacy")}
+            className="w-full flex items-center justify-between p-3 rounded-xl border border-border/60 hover:border-border hover:bg-accent/50 transition-colors group"
+          >
+            <div className="flex items-center gap-3">
+              <Lock className="h-4 w-4 text-muted-foreground group-hover:text-foreground transition-colors" />
+              <span className="text-sm">
+                {isEn ? "Privacy Policy" : isZh ? "隐私政策" : "プライバシーポリシー"}
+              </span>
+            </div>
+            <span className="text-xs text-muted-foreground">
+              {isEn ? "View" : isZh ? "查看" : "表示"}
+            </span>
+          </button>
+
+          <button
+            onClick={() => router.push("/terms")}
+            className="w-full flex items-center justify-between p-3 rounded-xl border border-border/60 hover:border-border hover:bg-accent/50 transition-colors group"
+          >
+            <div className="flex items-center gap-3">
+              <FileText className="h-4 w-4 text-muted-foreground group-hover:text-foreground transition-colors" />
+              <span className="text-sm">
+                {isEn ? "Terms of Service" : isZh ? "服务条款" : "利用規約"}
+              </span>
+            </div>
+            <span className="text-xs text-muted-foreground">
+              {isEn ? "View" : isZh ? "查看" : "表示"}
+            </span>
+          </button>
+        </div>
+      </Section>
 
       {/* ── Interface language ────────────────────────── */}
       <Section title={isEn ? "Interface Language" : lang === "zh" ? "界面语言" : "表示言語"}>
