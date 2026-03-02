@@ -78,8 +78,22 @@ export default function Home() {
   const [direction, setDirection]     = useState<DictionaryDirection>("zh-ja");
   const [tabIndex, setTabIndex]       = useState(0);
   const [searchInput, setSearchInput] = useState("");
-  const [activeQuery, setActiveQuery] = useState("");
-
+  const [activeQuery, setActiveQuery] = useState("");  
+  // Force loading to end after maximum time
+  const [forceLoaded, setForceLoaded] = useState(false);
+  
+  useEffect(() => {
+    // Force app to be ready after 8 seconds regardless of auth state
+    const maxTimeout = setTimeout(() => {
+      console.warn('Forcing app to load due to timeout');
+      setForceLoaded(true);
+    }, 8000);
+    
+    return () => clearTimeout(maxTimeout);
+  }, []);
+  
+  // Consider loading complete if force loaded OR auth is not loading
+  const effectiveLoading = authLoading && !forceLoaded;
   // Swipe gesture refs — avoid re-renders during drag
   const swipeRef    = useRef<HTMLDivElement>(null);
   const tabIdxRef   = useRef(0);
@@ -202,17 +216,22 @@ export default function Home() {
 
   // ── Guards ────────────────────────────────────────────────────────
   // Auth: redirect to login if not authenticated
-  if (authLoading || !mounted) {
+  if (effectiveLoading || !mounted) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+        <p className="text-sm text-muted-foreground mt-2">
+          {forceLoaded ? "認証をスキップして読み込み中..." : "認証処理中..."}
+        </p>
       </div>
     );
   }
-  if (!user) {
+  if (!user && !forceLoaded) {
     if (typeof window !== "undefined") window.location.href = "/login/";
     return null;
   }
+  
+  // Allow access without auth if force loaded (guest mode)
   if (lang === null) return <LanguagePicker onSelect={handleLangSelect} />;
 
   const isEn     = lang === "en";

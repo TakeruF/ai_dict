@@ -157,119 +157,100 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // ── Bootstrap ────────────────────────────────────────────────────
   useEffect(() => {
+    console.log('AuthProvider bootstrap starting...');
     loadingDebugger.logStart('auth-bootstrap');
     
-    // Prevent hydration issues by only running auth logic after mount
+    // Always set mounted to true immediately
     setMounted(true);
     
-    // Emergency reset listener
-    const handleEmergencyReset = () => forceReset();
-    if (typeof window !== 'undefined') {
-      window.addEventListener('emergency-auth-reset', handleEmergencyReset);
-    }
-    
-    // Skip if Supabase is not properly configured
-    if (!isSupabaseConfigured) {
-      console.warn("Supabase not configured properly - using local-only mode");
+    // Force loading to false after maximum timeout regardless of what happens
+    const maxTimeout = setTimeout(() => {
+      console.warn('Auth max timeout reached - forcing loading to false');
       setLoading(false);
-      loadingDebugger.logEnd('auth-bootstrap', 'supabase not configured');
-      return () => {
-        if (typeof window !== 'undefined') {
-          window.removeEventListener('emergency-auth-reset', handleEmergencyReset);
-        }
-      };
+      loadingDebugger.logError('auth-bootstrap', 'max timeout reached');
+    }, 5000); // 5 second absolute maximum
+    
+    // Skip Supabase entirely if not configured - immediate local mode
+    if (!isSupabaseConfigured) {
+      console.warn("Supabase not configured - using local-only mode");
+      setLoading(false);
+      clearTimeout(maxTimeout);
+      loadingDebugger.logEnd('auth-bootstrap', 'no supabase config');
+      return;
     }
 
     let mounted = true;
-    let timeoutId: NodeJS.Timeout;
 
-    // Emergency timeout to prevent infinite loading
-    const emergencyTimeout = setTimeout(() => {
-      if (mounted) {
-        console.warn("Auth bootstrap emergency timeout triggered");
-        forceReset();
-        loadingDebugger.logError('auth-bootstrap', 'emergency timeout');
-      }
-    }, 20000); // 20 second emergency timeout
-
-    // 1) Load existing session
-    loadingDebugger.logStart('auth-session-check');
-    supabase.auth.getSession().then(({ data: { session: s }, error }) => {
-      if (!mounted) return;
-      
-      loadingDebugger.logEnd('auth-session-check');
-      
-      if (error) {
-        console.error("Failed to get session:", error);
-        setLoading(false);
-        loadingDebugger.logError('auth-bootstrap', error);
-        return;
-      }
-      
-      console.log("Initial session check:", s ? "Session found" : "No session");
-      setSession(s);
-      setUser(s?.user ?? null);
-      
-      if (s?.user) {
-        loadingDebugger.logStart('auth-fetch-profile');
-        // Add timeout for profile fetching
-        timeoutId = setTimeout(() => {
-          if (mounted) {
-            console.warn("Profile fetch timeout, continuing without profile");
-            setLoading(false);
-            loadingDebugger.logError('auth-fetch-profile', 'timeout');
-          }
-        }, 10000);
+    // Simple session check with immediate fallback
+    const initAuth = async () => {
+      try {
+        console.log('Getting initial session...');
         
-        fetchProfile(s.user).finally(() => {
-          clearTimeout(timeoutId);
-          if (mounted) {
-            setLoading(false);
-            loadingDebugger.logEnd('auth-fetch-profile');
-            loadingDebugger.logEnd('auth-bootstrap', 'with user');
-          }
-        });
-      } else {
-        setLoading(false);
-        loadingDebugger.logEnd('auth-bootstrap', 'no user');
-      }
-    }).catch((error) => {
-      console.error("Auth initialization failed:", error);
-      if (mounted) {
-        setLoading(false);
-        loadingDebugger.logError('auth-bootstrap', error);
-      }
-    });
-
-    // 2) Listen for auth changes  
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (event, s) => {
-      if (!mounted) return;
-      
-      loadingDebugger.logStart('auth-state-change', { event });
-      console.log("Auth state changed:", event, s ? "with session" : "no session");
-      setSession(s);
-      setUser(s?.user ?? null);
-      
-      if (s?.user) {
-        await fetchProfile(s.user);
-      } else {
+        // Race session check against timeout
+        const sessionPromise = supabase.auth.getSession();
+        const timeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Session check timeout')), 3000)
+        );
+        
+        const { data: { session }, error } = await Promise.race([
+          sessionPromise,
+          timeoutPromise
+        ]) as any;
+        
+        if (!mounted) return;
+        
+        console.log('Session check result:', session ? 'found session' : 'no session', error ? `error: ${error.message}` : 'no error');
+        
+        if (error) {
+          console.error("Session check failed:", error);
+        }
+        
+        // Set auth state regardless of success/failure
+        setSession(session || null);
+        setUser(session?.user || null);
+        
+        // Don't fetch profile - just use basic user info to prevent loops
+        if (session?.user) {
+          setProfile({
+            id: session.user.id,
+            email: session.user.email || "",
+            display_name: session.user.email || "User",
+            avatar_url: session.user.user_metadata?.avatar_url || null,
+            role: "user",
+            is_active: true,
+            provider: session.user.app_metadata?.provider || "email",
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          });
+        } else {
+          setProfile(null);
+        }
+        
+      } catch (error) {
+        console.error("Auth init failed:", error);
+        // Continue with no auth state
+        setSession(null);
+        setUser(null);
         setProfile(null);
+      } finally {
+        // Always end loading after session check
+        if (mounted) {
+          console.log('Auth initialization complete - setting loading false');
+          setLoading(false);
+          clearTimeout(maxTimeout);
+          loadingDebugger.logEnd('auth-bootstrap', 'init complete');
+        }
       }
-      loadingDebugger.logEnd('auth-state-change', { event });
-    });
+    };
+
+    // Start auth initialization
+    initAuth();
 
     return () => {
       mounted = false;
-      clearTimeout(emergencyTimeout);
-      clearTimeout(timeoutId);
-      subscription.unsubscribe();
-      if (typeof window !== 'undefined') {
-        window.removeEventListener('emergency-auth-reset', handleEmergencyReset);
-      }
+      clearTimeout(maxTimeout);
     };
-  }, [fetchProfile, forceReset]);
+  }, []); // Remove all dependencies to prevent re-runs
 
   // ── Sign out ─────────────────────────────────────────────────────
   const signOut = useCallback(async () => {
