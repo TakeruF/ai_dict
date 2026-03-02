@@ -85,35 +85,49 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     // Skip if Supabase is not properly configured
     if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+      console.warn("Supabase not configured properly");
       setLoading(false);
       return;
     }
 
+    let mounted = true;
+
     // 1) Load existing session
     supabase.auth.getSession().then(({ data: { session: s }, error }) => {
+      if (!mounted) return;
+      
       if (error) {
         console.error("Failed to get session:", error);
         setLoading(false);
         return;
       }
+      
+      console.log("Initial session check:", s ? "Session found" : "No session");
       setSession(s);
       setUser(s?.user ?? null);
+      
       if (s?.user) {
-        fetchProfile(s.user).finally(() => setLoading(false));
+        fetchProfile(s.user).finally(() => {
+          if (mounted) setLoading(false);
+        });
       } else {
         setLoading(false);
       }
     }).catch((error) => {
       console.error("Auth initialization failed:", error);
-      setLoading(false);
+      if (mounted) setLoading(false);
     });
 
     // 2) Listen for auth changes
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (_event, s) => {
+    } = supabase.auth.onAuthStateChange(async (event, s) => {
+      if (!mounted) return;
+      
+      console.log("Auth state changed:", event, s ? "with session" : "no session");
       setSession(s);
       setUser(s?.user ?? null);
+      
       if (s?.user) {
         await fetchProfile(s.user);
       } else {
@@ -121,7 +135,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
   }, [fetchProfile]);
 
   // ── Sign out ─────────────────────────────────────────────────────

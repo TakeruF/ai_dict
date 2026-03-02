@@ -147,11 +147,14 @@ WHERE email = 'your-email@example.com';
 4. **+ CREATE CREDENTIALS → OAuth client ID** をクリック
 5. Application type: **Web application**
 6. Name: `AI Dict`
-7. **Authorized redirect URIs** に以下を追加:
+7. **Authorized redirect URIs** に以下を**両方**追加:
    ```
-   https://xxxxx.supabase.co/auth/v1/callback
+   https://ziufpkjwptapciuvartw.supabase.co/auth/v1/callback
    ```
-   （`xxxxx` は Supabase プロジェクトの URL に置き換え）
+   （開発用にlocalhost も追加する場合）:
+   ```
+   http://localhost:3000/auth/callback/
+   ```
 8. 「Create」をクリックして **Client ID** と **Client Secret** を控える
 
 > **OAuth 同意画面**: まだ設定していない場合は **APIs & Services → OAuth consent screen** で設定してください。
@@ -176,9 +179,10 @@ Supabase ダッシュボード → **Authentication → Settings** で以下を�
   - ON: 登録時に確認メールが送信される（推奨）
   - OFF: 即座にログイン可能
 - **Site URL**: `https://aidict.me`（本番 URL）
-- **Redirect URLs** に以下を追加:
+- **Redirect URLs** に以下を**すべて**追加:
   ```
   https://aidict.me/auth/callback/
+  https://www.aidict.me/auth/callback/
   http://localhost:3000/auth/callback/
   ```
 
@@ -192,6 +196,7 @@ Supabase ダッシュボード → **Authentication → URL Configuration**:
 |------|-----|
 | Site URL | `https://aidict.me` |
 | Redirect URLs | `https://aidict.me/auth/callback/` |
+| | `https://www.aidict.me/auth/callback/` |
 | | `http://localhost:3000/auth/callback/` |
 
 ---
