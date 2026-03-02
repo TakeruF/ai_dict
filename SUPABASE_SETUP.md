@@ -146,7 +146,7 @@ WHERE email = 'your-email@example.com';
 3. **APIs & Services → Credentials** に移動
 4. **+ CREATE CREDENTIALS → OAuth client ID** をクリック
 5. Application type: **Web application**
-6. Name: `AI Dict`
+6. Name: `AI Dict Web`
 7. **Authorized redirect URIs** に以下を**両方**追加:
    ```
    https://ziufpkjwptapciuvartw.supabase.co/auth/v1/callback
@@ -156,6 +156,24 @@ WHERE email = 'your-email@example.com';
    http://localhost:3000/auth/callback/
    ```
 8. 「Create」をクリックして **Client ID** と **Client Secret** を控える
+
+#### Android アプリ用の OAuth Client ID 追加：
+
+9. **+ CREATE CREDENTIALS → OAuth client ID** を再度クリック
+10. Application type: **Android**
+11. Name: `AI Dict Android`
+12. Package name: `com.aidict.app`
+13. SHA-1 certificate fingerprint を取得:
+    ```bash
+    # デバッグ用SHA-1 (開発時)
+    keytool -keystore ~/.android/debug.keystore -list -v
+    # パスワード: android
+
+    # リリース用SHA-1 (本番時)
+    keytool -keystore path/to/release.keystore -list -v
+    ```
+14. 取得したSHA-1フィンガープリントを入力
+15. 「Create」をクリック
 
 > **OAuth 同意画面**: まだ設定していない場合は **APIs & Services → OAuth consent screen** で設定してください。
 > - User Type: External
@@ -184,6 +202,7 @@ Supabase ダッシュボード → **Authentication → Settings** で以下を�
   https://aidict.me/auth/callback/
   https://www.aidict.me/auth/callback/
   http://localhost:3000/auth/callback/
+  com.aidict.app://auth/callback/
   ```
 
 ---
@@ -198,6 +217,7 @@ Supabase ダッシュボード → **Authentication → URL Configuration**:
 | Redirect URLs | `https://aidict.me/auth/callback/` |
 | | `https://www.aidict.me/auth/callback/` |
 | | `http://localhost:3000/auth/callback/` |
+| | `com.aidict.app://auth/callback/` |
 
 ---
 

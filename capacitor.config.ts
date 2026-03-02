@@ -8,6 +8,9 @@ const config: CapacitorConfig = {
     androidScheme: "https",
     iosScheme: "capacitor",
   },
+  android: {
+    allowMixedContent: true,
+  },
   ios: {
     preferredContentMode: "mobile",
     scheme: "capacitor",
@@ -15,6 +18,9 @@ const config: CapacitorConfig = {
   plugins: {
     SplashScreen: {
       launchShowDuration: 0,
+    },
+    Browser: {
+      windowName: "_blank",
     },
   },
 };

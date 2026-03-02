@@ -9,6 +9,8 @@ import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/components/auth-provider";
+import { useCapacitorAuth, useCapacitorGoogleAuth } from "@/hooks/useCapacitorAuth";
+import { isCapacitor } from "@/hooks/useHaptics";
 
 // ── Google icon SVG ────────────────────────────────────────────────
 function GoogleIcon({ className }: { className?: string }) {
@@ -41,6 +43,10 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  
+  // Setup Capacitor auth handling
+  useCapacitorAuth();
+  const handleCapacitorGoogleAuth = useCapacitorGoogleAuth();
 
   // If already authenticated, redirect to home
   useEffect(() => {
@@ -51,13 +57,18 @@ export default function LoginPage() {
 
   // ── Google OAuth ─────────────────────────────────────────────────
   async function handleGoogleLogin() {
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: {
-        redirectTo: `${window.location.origin}/auth/callback/`,
-      },
-    });
-    if (error) toast.error(error.message);
+    if (isCapacitor()) {
+      const { error } = await handleCapacitorGoogleAuth();
+      if (error) toast.error(error.message);
+    } else {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback/`,
+        },
+      });
+      if (error) toast.error(error.message);
+    }
   }
 
   // ── Email / Password ─────────────────────────────────────────────
@@ -68,11 +79,15 @@ export default function LoginPage() {
     setSubmitting(true);
     try {
       if (mode === "signup") {
+        const redirectTo = isCapacitor() 
+          ? "com.aidict.app://auth/callback/" 
+          : `${window.location.origin}/auth/callback/`;
+          
         const { error } = await supabase.auth.signUp({
           email: email.trim(),
           password,
           options: {
-            emailRedirectTo: `${window.location.origin}/auth/callback/`,
+            emailRedirectTo: redirectTo,
           },
         });
         if (error) throw error;
