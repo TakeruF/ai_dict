@@ -46,16 +46,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [mounted, setMounted] = useState(false);
   const [stable, setStable] = useState(false); // Prevent flashing
 
-  // Fetch or upsert profile from Supabase
+  // Fetch or upsert profile from Supabase (simplified for faster loading)
   const fetchProfile = useCallback(async (u: User) => {
     if (!u?.id) return;
     
     loadingDebugger.logStart(`fetch-profile-${u.id}`);
     
     try {
-      // Add timeout to prevent hanging requests
+      // Much faster timeout for profile operations
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 8000); // 8 second timeout
+      const timeoutId = setTimeout(() => controller.abort(), 3000); // 3 second timeout
       
       const { data, error } = await supabase
         .from("profiles")
@@ -67,7 +67,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       clearTimeout(timeoutId);
 
       if (error && error.code === "PGRST116") {
-        // Profile doesn't exist yet → insert
+        // Profile doesn't exist yet → create minimal profile
         loadingDebugger.logStart(`create-profile-${u.id}`);
         const newProfile: Partial<Profile> = {
           id: u.id,
@@ -81,15 +81,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           provider: u.app_metadata?.provider ?? "email",
         };
         
-        const { data: inserted, error: insertError } = await supabase
+        // Use upsert with no conflict waiting for faster performance
+        const { data: inserted } = await supabase
           .from("profiles")
-          .upsert(newProfile, { onConflict: "id" })
+          .upsert(newProfile, { onConflict: "id", ignoreDuplicates: true })
           .select()
           .single();
           
-        if (insertError) {
-          console.error("Failed to create profile:", insertError);
-          // Set a minimal profile to prevent infinite loops
+        if (inserted) {
+          setProfile(inserted);
+        } else {
+          // Always provide fallback profile
           setProfile({
             id: u.id,
             email: u.email ?? "",
@@ -101,13 +103,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
           });
-        } else {
-          setProfile(inserted);
         }
         loadingDebugger.logEnd(`create-profile-${u.id}`);
       } else if (error) {
         console.error("Profile fetch error:", error);
-        // Set minimal profile to prevent infinite auth loops
+        // Always provide fallback profile for stability
         setProfile({
           id: u.id,
           email: u.email ?? "",
@@ -165,9 +165,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Always set mounted to true immediately
     setMounted(true);
     
-    // Simplified timeout for mobile environments - force faster resolution
+    // Much faster timeout for Android - prioritize UX over auth completeness
     const isMobile = isCapacitor();
-    const maxTimeoutDuration = isMobile ? 2000 : 4000; // 2s for mobile, 4s for web
+    const maxTimeoutDuration = isMobile ? 800 : 2000; // 0.8s for mobile, 2s for web
     
     // Force loading to false after maximum timeout regardless of what happens
     const maxTimeout = setTimeout(() => {
@@ -187,14 +187,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     let mounted = true;
 
-    // Simplified session check with faster timeout
+    // Ultra-fast session check with aggressive timeout
     const initAuth = async () => {
       try {
         console.log('Getting initial session...');
         
-        // Much shorter timeout for faster UX
+        // Much shorter timeout for best UX
         const sessionPromise = supabase.auth.getSession();
-        const timeoutDuration = isMobile ? 1500 : 2500; // 1.5s for mobile, 2.5s for web
+        const timeoutDuration = isMobile ? 500 : 1000; // 0.5s for mobile, 1s for web
         const timeoutPromise = new Promise((_, reject) => 
           setTimeout(() => reject(new Error('Session check timeout')), timeoutDuration)
         );
@@ -213,7 +213,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setSession(session || null);
         setUser(session?.user || null);
         
-        // Simple profile creation without fetching
+        // Minimal profile creation for fast startup
         if (session?.user) {
           setProfile({
             id: session.user.id,

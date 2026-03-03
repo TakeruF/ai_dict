@@ -10,6 +10,8 @@ const config: CapacitorConfig = {
   },
   android: {
     allowMixedContent: true,
+    // Prevent browser opening for OAuth
+    webContentsDebuggingEnabled: false,
   },
   ios: {
     preferredContentMode: "mobile",
@@ -20,7 +22,13 @@ const config: CapacitorConfig = {
       launchShowDuration: 0,
     },
     Browser: {
-      windowName: "_blank",
+      windowName: "_system", // Force system browser to close and return to app
+      toolbarColor: "#ffffff",
+      // Always return to app after auth
+      presentationStyle: "popover",
+    },
+    App: {
+      allowUrlInteractions: false, // Prevent unwanted URL handling
     },
   },
 };

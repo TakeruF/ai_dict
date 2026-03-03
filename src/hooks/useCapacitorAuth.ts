@@ -33,6 +33,19 @@ export function useCapacitorAuth() {
             console.error("Failed to set session:", error);
           } else {
             console.log("Authentication successful:", sessionData);
+            
+            // Close any open browser windows after successful auth
+            try {
+              const { Browser } = await import('@capacitor/browser');
+              await Browser.close();
+            } catch (e) {
+              // Browser plugin might not be available or already closed
+            }
+            
+            // Navigate to main app
+            if (typeof window !== 'undefined') {
+              window.location.href = "/";
+            }
           }
         }
       } catch (error) {
@@ -75,7 +88,7 @@ export function useCapacitorAuth() {
 }
 
 /**
- * Enhanced Google OAuth for Capacitor apps
+ * Enhanced Google OAuth for Capacitor apps with Android-specific optimization
  */
 export function useCapacitorGoogleAuth() {
   return useCallback(async () => {
@@ -96,13 +109,29 @@ export function useCapacitorGoogleAuth() {
         return { error };
       }
 
-      // Capacitor OAuth with deep link redirect
+      // For Capacitor (Android), use Browser plugin for better control
+      const { Browser } = await import('@capacitor/browser');
+      
+      // Open OAuth in system browser but with app return handling
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: {
           redirectTo: "com.aidict.app://auth/callback/",
+          // Force app-specific flow
+          skipBrowserRedirect: false,
         },
       });
+      
+      if (!error) {
+        // Immediately close any open browser windows after OAuth starts
+        setTimeout(async () => {
+          try {
+            await Browser.close();
+          } catch (e) {
+            // Browser might already be closed
+          }
+        }, 1000);
+      }
       
       return { error };
     } catch (error) {

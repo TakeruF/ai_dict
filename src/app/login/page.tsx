@@ -71,7 +71,15 @@ export default function LoginPage() {
     try {
       if (isCapacitor()) {
         const { error } = await handleCapacitorGoogleAuth();
-        if (error) toast.error(error.message);
+        if (error) {
+          toast.error(error.message);
+        } else {
+          // For mobile, show success message and wait for deep link
+          toast.success("認証を開始しています...", {
+            description: "ブラウザで認証後、アプリに戻ります",
+            duration: 3000,
+          });
+        }
       } else {
         const { error } = await supabase.auth.signInWithOAuth({
           provider: "google",
