@@ -24,6 +24,23 @@
 .DS_Store
 *.pem
 
+# editors (.vscode/settings.json is deliberately tracked)
+.idea/
+
+# android build artifacts (Capacitor)
+android/.gradle/
+android/build/
+android/app/build/
+android/local.properties
+android/captures/
+android/keystore.properties
+
+# keystores — android/app/debug.keystore is deliberately tracked because
+# android/app/build.gradle signs with it; real release keys must never land here
+*.jks
+*.keystore
+!android/app/debug.keystore
+
 # debug
 npm-debug.log*
 yarn-debug.log*
