@@ -11,7 +11,6 @@ import { SettingsTab } from "@/components/tabs/settings-tab";
 import { NativeLanguage, DictionaryDirection } from "@/types/dictionary";
 import { getSettings, saveSettings } from "@/lib/store";
 import { isCapacitor } from "@/hooks/useHaptics";
-import { useAuth } from "@/components/auth-provider";
 
 // ── Tab definitions ─────────────────────────────────────────────────
 const TABS = [
@@ -72,43 +71,13 @@ function LanguagePicker({
 
 // ── Main app ────────────────────────────────────────────────────────
 export default function Home() {
-  const { user, loading: authLoading } = useAuth();
   const [mounted, setMounted]         = useState(false);
   const [lang, setLang]               = useState<NativeLanguage | null>(null);
   const [direction, setDirection]     = useState<DictionaryDirection>("zh-ja");
   const [tabIndex, setTabIndex]       = useState(0);
   const [searchInput, setSearchInput] = useState("");
-  const [activeQuery, setActiveQuery] = useState("");  
-  // Force loading to end after maximum time (shorter timeout for better UX)
-  const [forceLoaded, setForceLoaded] = useState(false);
-  
-  useEffect(() => {
-    // Much shorter timeout for better UX - especially important for mobile
-    const isMobile = isCapacitor();
-    const maxTimeout = isMobile ? 2500 : 4000; // 2.5s for mobile, 4s for web
-    
-    // Force app to be ready after shorter timeout
-    const timeoutId = setTimeout(() => {
-      console.warn(`Forcing app to load due to timeout (${maxTimeout}ms)`);
-      setForceLoaded(true);
-    }, maxTimeout);
-    
-    // Also force load when auth completes naturally (with small delay)
-    if (!authLoading) {
-      const delayId = setTimeout(() => {
-        setForceLoaded(true);
-      }, 100); // Very short delay to prevent flash
-      return () => {
-        clearTimeout(timeoutId);
-        clearTimeout(delayId);
-      };
-    }
-    
-    return () => clearTimeout(timeoutId);
-  }, [authLoading]);
-  
-  // Simplified loading check - loading only if auth is loading AND not force loaded
-  const isLoading = authLoading && !forceLoaded;
+  const [activeQuery, setActiveQuery] = useState("");
+
   // Swipe gesture refs — avoid re-renders during drag
   const swipeRef    = useRef<HTMLDivElement>(null);
   const tabIdxRef   = useRef(0);
@@ -216,7 +185,7 @@ export default function Home() {
     const q = searchInput.trim();
     if (!q) return;
     const s = getSettings();
-    if (!s.apiKey && !s.invitationCode) {
+    if (!s.apiKey) {
       setTabIndex(SETTINGS_IDX);
       return;
     }
@@ -230,33 +199,12 @@ export default function Home() {
   }, []);
 
   // ── Guards ────────────────────────────────────────────────────────
-  // Show loading during auth process (but only briefly)
-  if (isLoading || !mounted) {
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center gap-4 bg-background px-6">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-        <div className="text-center">
-          <p className="text-sm font-medium text-foreground mb-1">
-            認証処理中...
-          </p>
-          <p className="text-xs text-muted-foreground">
-            初回起動時は少しお時間をいただく場合があります
-          </p>
-        </div>
-      </div>
-    );
+  // `lang` is read from localStorage, so hold the first paint until mount to
+  // avoid a hydration mismatch. Settle happens on the first effect tick.
+  if (!mounted) {
+    return <div className="min-h-screen bg-background" />;
   }
-  
-  // Redirect to login if not authenticated and not in forced guest mode
-  if (!user && !forceLoaded) {
-    if (typeof window !== "undefined") window.location.href = "/login/";
-    return null;
-  }
-  
-  // Allow access in guest mode if force loaded (with limited functionality)
-  if (!user && forceLoaded) {
-    console.log('Running in guest mode due to auth timeout');
-  }
+
   if (lang === null) return <LanguagePicker onSelect={handleLangSelect} />;
 
   const isEn     = lang === "en";

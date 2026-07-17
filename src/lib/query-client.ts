@@ -7,11 +7,10 @@ export const queryClient = new QueryClient({
       gcTime: 1000 * 60 * 60 * 24, // 24 hours in cache
       retry: (failureCount, error) => {
         // Don't retry auth errors or not found errors
-        const errorCode = (error as any)?.code;
-        if (errorCode === 'invalid_api_key' || 
+        const errorCode = (error as { code?: string })?.code;
+        if (errorCode === 'invalid_api_key' ||
             errorCode === 'not_found' ||
-            errorCode === 'missing_api_key' ||
-            errorCode === 'invalid_invitation_code') {
+            errorCode === 'missing_api_key') {
           return false;
         }
         return failureCount < 2; // Max 2 retries

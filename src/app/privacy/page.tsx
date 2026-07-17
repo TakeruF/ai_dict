@@ -19,292 +19,238 @@ const LANGUAGES = [
 const PRIVACY_CONTENT = {
   ja: {
     title: "プライバシーポリシー",
-    lastUpdated: "最終更新日：2026年3月2日",
+    lastUpdated: "最終更新日：2026年7月17日",
     sections: {
       intro: {
         title: "はじめに",
-        content: `AI Dict（以下「当アプリ」）は、ユーザーのプライバシー保護を重要視しています。本プライバシーポリシーでは、当アプリがどのような情報を収集し、どのように使用・保護するかについて説明します。`
+        content: `AI Dict（以下「当アプリ」）は、サーバーを持たないアプリケーションです。本プライバシーポリシーでは、当アプリがどのような情報を扱うか、また扱わないかについて説明します。`
       },
       collection: {
         title: "収集する情報",
         content: `
-### 1. アカウント情報
-- メールアドレス（Googleアカウント連携時）
-- プロフィール情報（氏名、プロフィール画像等）
+当アプリはアカウント登録を必要とせず、当アプリの運営者が個人情報を収集することはありません。以下のデータはすべて、お使いの端末（ブラウザのLocalStorage）にのみ保存され、外部に送信されることはありません：
+
+### 1. APIキー
+- ご自身で設定した AI プロバイダー（Anthropic・Google・OpenAI・DeepSeek・OpenRouter 等）のAPIキー
+- 検索の都度、お使いの端末から選択したプロバイダーへ直接送信されます（当アプリのサーバーは経由しません）
 
 ### 2. 使用データ
-- 検索履歴（辞書検索クエリ）
+- 検索履歴（辞書検索クエリと結果）
 - 学習進捗データ（暗記機能での学習状況）
 - アプリ設定情報（言語設定、テーマ設定等）
 
-### 3. 技術的データ
-- デバイス情報（OS、アプリバージョン等）
-- 利用統計（機能使用頻度、エラーログ等）`
+これらはすべて端末のLocalStorageに保存され、アプリをアンインストールするかブラウザのデータを消去すると失われます。`
       },
       usage: {
         title: "情報の使用目的",
         content: `
 ### 1. サービス提供
-- AI翻訳・辞書機能の提供
-- ユーザー個人の学習進捗管理
-- 検索履歴の保存・管理
+端末に保存されたAPIキーと検索クエリは、辞書検索を行うために選択したAIプロバイダーへ直接送信されます。学習進捗・検索履歴は端末内でのみ管理され、暗記機能や履歴表示に使用されます。
 
-### 2. サービス改善
-- アプリの機能改善・最適化
-- ユーザビリティ向上のための分析
-- 技術的問題の診断・修正
-
-### 3. セキュリティ
-- 不正アクセスの防止
-- アカウントの保護`
+### 2. データが送信されない範囲
+当アプリの運営者が運用するサーバーは存在しないため、検索クエリ・APIキー・学習データが当アプリの運営者に送信・保存されることはありません。`
       },
       sharing: {
         title: "第三者との情報共有",
         content: `
-当アプリは以下の場合を除き、個人情報を第三者と共有することはありません：
+当アプリの運営者は、そもそも個人情報を保持していないため、第三者と共有することもありません。ただし、当アプリを利用する際、以下の情報がお使いの端末から直接第三者へ送信されます：
 
-### 1. サービス提供者
-- **Supabase**: データベース・認証サービス
-- **AI プロバイダー**: Claude (Anthropic)、Gemini (Google)、GPT (OpenAI)等の翻訳サービス
-- **Google**: 認証サービス（Googleログイン使用時）
+### 1. AIプロバイダー
+検索クエリは、設定画面で選択・入力したAIプロバイダー（Claude (Anthropic)、Gemini (Google)、GPT (OpenAI)、DeepSeek、OpenRouter 等）へ、お使いの端末から直接送信されます。各プロバイダーにおけるデータの取扱いについては、各社のプライバシーポリシーをご確認ください。
 
 ### 2. 法的要求
-法令に基づく開示要求がある場合`
+当アプリの運営者はユーザーデータを保有していないため、開示すべきデータは存在しません。`
       },
       security: {
         title: "データセキュリティ",
         content: `
-当アプリは適切な技術的・物理的セキュリティ対策を講じて、個人情報を保護しています：
+APIキーを含むすべてのデータはお使いの端末内にのみ保存され、外部のサーバーには一切送信されません。セキュリティは主にお使いの端末・ブラウザの管理に依存します：
 
-- データの暗号化（転送時・保存時）
-- アクセス制御の実装
-- 定期的なセキュリティ監査
-- インシデント対応体制の整備`
+- APIキーはお使いの端末のLocalStorageに平文で保存されます。共有端末での利用にはご注意ください
+- 各AIプロバイダーとの通信は各社が提供するAPIのセキュリティ機構（HTTPS等）に依拠します
+- 当アプリの運営者はサーバーを持たないため、サーバー側の侵害リスクはありません`
       },
       rights: {
-        title: "ユーザーの権利",
+        title: "ユーザーの権利・データの管理",
         content: `
-ユーザーは以下の権利を有します：
+すべてのデータは端末内にのみ存在するため、ユーザーご自身が完全に管理できます：
 
-### 1. アクセス権
-自身の個人データへのアクセス・確認
+### 1. アクセス・確認
+アプリ内の設定画面・履歴画面からいつでも確認できます
 
-### 2. 修正権
-不正確な個人データの修正要求
+### 2. 削除
+設定画面から検索履歴・暗記カード・APIキーを個別に削除できます。アプリのアンインストールまたはブラウザデータの消去により、すべてのデータが完全に削除されます
 
-### 3. 削除権
-個人データの削除要求（「忘れられる権利」）
-
-### 4. 処理制限権
-特定の処理の制限要求
-
-これらの権利を行使される場合は、アプリ内の設定画面またはサポートまでご連絡ください。`
+当アプリの運営者がユーザーデータを保有していないため、開示・削除等のリクエストを運営者へ送る必要はありません。`
       },
       retention: {
         title: "データ保持期間",
         content: `
-- **アカウント情報**: アカウント削除まで
-- **検索履歴・学習データ**: アカウント削除またはユーザーによる削除まで
-- **技術的データ**: 収集から最大2年間`
+- **端末内のすべてのデータ**（APIキー・検索履歴・学習データ・設定）: ユーザーが削除するか、アプリをアンインストールする、またはブラウザデータを消去するまで、端末内にのみ保持されます
+- 当アプリの運営者側にデータは一切保持されません`
       },
       contact: {
         title: "お問い合わせ",
         content: `
-プライバシーに関するご質問は、アプリ内の設定画面からお問い合わせください。`
+プライバシーに関するご質問は、GitHubリポジトリのIssueからお問い合わせください。`
       }
     }
   },
   en: {
     title: "Privacy Policy",
-    lastUpdated: "Last updated: March 2, 2026",
+    lastUpdated: "Last updated: July 17, 2026",
     sections: {
       intro: {
         title: "Introduction",
-        content: `AI Dict (the "App") takes user privacy seriously. This Privacy Policy explains what information we collect, how we use it, and how we protect it.`
+        content: `AI Dict (the "App") has no server. This Privacy Policy explains what information the App handles, and — just as importantly — what it does not.`
       },
       collection: {
         title: "Information We Collect",
         content: `
-### 1. Account Information
-- Email address (when using Google account integration)
-- Profile information (name, profile picture, etc.)
+The App requires no account, and the App's operator does not collect any personal information. All of the following data lives only on your device (your browser's LocalStorage) and is never sent anywhere else:
+
+### 1. API Key
+- The API key you configure for your chosen AI provider (Anthropic, Google, OpenAI, DeepSeek, OpenRouter, etc.)
+- On every search, it is sent directly from your device to the provider you selected — it never passes through any server operated by us
 
 ### 2. Usage Data
-- Search history (dictionary search queries)
-- Learning progress data (study progress in memorization features)
-- App settings (language preferences, theme settings, etc.)
+- Search history (your dictionary queries and results)
+- Learning progress (your flashcard study state)
+- App settings (language preference, theme, etc.)
 
-### 3. Technical Data
-- Device information (OS, app version, etc.)
-- Usage statistics (feature usage frequency, error logs, etc.)`
+All of this is stored in your device's LocalStorage and is lost if you uninstall the app or clear your browser data.`
       },
       usage: {
-        title: "How We Use Information",
+        title: "How Information Is Used",
         content: `
 ### 1. Service Provision
-- Providing AI translation and dictionary features
-- Managing individual user learning progress
-- Storing and managing search history
+The API key and search query stored on your device are sent directly to the AI provider you selected, to perform the dictionary lookup. Learning progress and search history are managed entirely on your device, for the flashcard and history features.
 
-### 2. Service Improvement
-- Improving and optimizing app features
-- Analyzing for better usability
-- Diagnosing and fixing technical issues
-
-### 3. Security
-- Preventing unauthorized access
-- Protecting user accounts`
+### 2. What Never Leaves Your Device
+We operate no server. Your search queries, API key, and learning data are never transmitted to or stored by us.`
       },
       sharing: {
         title: "Information Sharing",
         content: `
-We do not share personal information with third parties except in the following cases:
+We hold no personal information to begin with, so we have nothing to share with third parties. That said, using the App does send the following directly from your device to a third party:
 
-### 1. Service Providers
-- **Supabase**: Database and authentication services
-- **AI Providers**: Claude (Anthropic), Gemini (Google), GPT (OpenAI), etc. for translation services
-- **Google**: Authentication services (when using Google login)
+### 1. AI Providers
+Your search query is sent directly from your device to the AI provider you selected and configured in Settings (Claude (Anthropic), Gemini (Google), GPT (OpenAI), DeepSeek, OpenRouter, etc.). Please refer to each provider's own privacy policy for how they handle that data.
 
 ### 2. Legal Requirements
-When disclosure is required by law`
+Since we hold no user data, there is nothing for us to disclose.`
       },
       security: {
         title: "Data Security",
         content: `
-We implement appropriate technical and physical security measures to protect personal information:
+All data, including your API key, is stored only on your device and is never sent to an external server. Security depends primarily on how you manage your own device and browser:
 
-- Data encryption (in transit and at rest)
-- Access control implementation
-- Regular security audits
-- Incident response procedures`
+- Your API key is stored in plaintext in your device's LocalStorage — be cautious when using a shared device
+- Communication with each AI provider relies on that provider's own API security (HTTPS, etc.)
+- Since we operate no server, there is no server-side breach risk on our end`
       },
       rights: {
-        title: "Your Rights",
+        title: "Your Rights & Data Control",
         content: `
-You have the following rights:
+Because all data lives only on your device, you have complete control over it:
 
-### 1. Access Right
-Access and verify your personal data
+### 1. Access & Review
+View it anytime from the app's Settings and History screens
 
-### 2. Rectification Right
-Request correction of inaccurate personal data
+### 2. Deletion
+Delete your search history, flashcards, or API key individually from Settings. Uninstalling the app, or clearing your browser data, permanently deletes everything
 
-### 3. Erasure Right
-Request deletion of personal data ("right to be forgotten")
-
-### 4. Restriction Right
-Request restriction of certain processing
-
-To exercise these rights, please contact us through the app's settings screen or support.`
+Since we hold no user data, there is no need to send us a request to access or delete it.`
       },
       retention: {
         title: "Data Retention",
         content: `
-- **Account Information**: Until account deletion
-- **Search History & Learning Data**: Until account deletion or user deletion
-- **Technical Data**: Up to 2 years from collection`
+- **All on-device data** (API key, search history, learning data, settings): kept only on your device until you delete it, uninstall the app, or clear your browser data
+- We retain nothing on our side`
       },
       contact: {
         title: "Contact Us",
         content: `
-For privacy-related questions, please contact us through the app's settings screen.`
+For privacy-related questions, please open an issue on the project's GitHub repository.`
       }
     }
   },
   zh: {
     title: "隐私政策",
-    lastUpdated: "最后更新：2026年3月2日",
+    lastUpdated: "最后更新：2026年7月17日",
     sections: {
       intro: {
         title: "简介",
-        content: `AI Dict（以下简称"本应用"）高度重视用户隐私保护。本隐私政策说明了我们收集哪些信息、如何使用这些信息以及如何保护这些信息。`
+        content: `AI Dict（以下简称"本应用"）不运行任何服务器。本隐私政策说明本应用会处理哪些信息，以及——同样重要的——不会处理哪些信息。`
       },
       collection: {
         title: "收集的信息",
         content: `
-### 1. 账户信息
-- 电子邮件地址（使用谷歌账户集成时）
-- 个人资料信息（姓名、头像等）
+本应用无需注册账户，本应用的运营者不收集任何个人信息。以下所有数据仅保存在您的设备（浏览器的 LocalStorage）中，不会被发送到任何外部：
+
+### 1. API 密钥
+- 您自行配置的 AI 服务商（Anthropic、Google、OpenAI、DeepSeek、OpenRouter 等）的 API 密钥
+- 每次搜索时，密钥会从您的设备直接发送给您选择的服务商（不经过本应用的任何服务器）
 
 ### 2. 使用数据
-- 搜索历史（词典搜索查询）
+- 搜索历史（词典搜索查询及结果）
 - 学习进度数据（记忆功能中的学习情况）
 - 应用设置（语言偏好、主题设置等）
 
-### 3. 技术数据
-- 设备信息（操作系统、应用版本等）
-- 使用统计（功能使用频率、错误日志等）`
+以上数据均保存在设备的 LocalStorage 中，卸载应用或清除浏览器数据后将永久丢失。`
       },
       usage: {
         title: "信息使用目的",
         content: `
 ### 1. 服务提供
-- 提供AI翻译和词典功能
-- 管理个人用户学习进度
-- 保存和管理搜索历史
+保存在设备上的 API 密钥和搜索查询会直接发送给您选择的 AI 服务商，以完成词典查询。学习进度和搜索历史完全在设备本地管理，用于记忆功能和历史记录显示。
 
-### 2. 服务改进
-- 改进和优化应用功能
-- 分析以提高可用性
-- 诊断和修复技术问题
-
-### 3. 安全性
-- 防止未经授权的访问
-- 保护用户账户`
+### 2. 不会离开设备的范围
+本应用的运营者不运行任何服务器，因此搜索查询、API 密钥和学习数据不会被发送给或保存在本应用运营者处。`
       },
       sharing: {
         title: "信息共享",
         content: `
-除以下情况外，我们不会与第三方共享个人信息：
+本应用的运营者本身不持有任何个人信息，因此也无法与第三方共享。但在使用本应用时，以下信息会从您的设备直接发送给第三方：
 
-### 1. 服务提供商
-- **Supabase**: 数据库和认证服务
-- **AI 提供商**: Claude (Anthropic)、Gemini (Google)、GPT (OpenAI) 等翻译服务
-- **Google**: 认证服务（使用谷歌登录时）
+### 1. AI 服务商
+您的搜索查询会从设备直接发送给您在设置页面选择并配置的 AI 服务商（Claude (Anthropic)、Gemini (Google)、GPT (OpenAI)、DeepSeek、OpenRouter 等）。有关各服务商如何处理该数据，请参阅其各自的隐私政策。
 
 ### 2. 法律要求
-法律要求披露时`
+由于本应用的运营者不持有任何用户数据，因此没有可披露的内容。`
       },
       security: {
         title: "数据安全",
         content: `
-我们实施适当的技术和物理安全措施来保护个人信息：
+包括 API 密钥在内的所有数据仅保存在您的设备中，不会发送到任何外部服务器。安全性主要取决于您自己对设备和浏览器的管理：
 
-- 数据加密（传输和存储时）
-- 访问控制实施
-- 定期安全审计
-- 事件响应程序`
+- API 密钥以明文形式保存在您设备的 LocalStorage 中，在共享设备上使用时请务必谨慎
+- 与各 AI 服务商的通信依赖于各服务商自身提供的 API 安全机制（如 HTTPS）
+- 由于本应用的运营者不运行服务器，因此不存在服务器端被入侵的风险`
       },
       rights: {
-        title: "您的权利",
+        title: "您的权利与数据控制",
         content: `
-您拥有以下权利：
+由于所有数据仅存在于您的设备中，您可以完全自主管理：
 
-### 1. 访问权
-访问和验证您的个人数据
+### 1. 访问与查看
+随时可在应用的设置页面和历史记录页面查看
 
-### 2. 更正权
-要求更正不准确的个人数据
+### 2. 删除
+可在设置页面中单独删除搜索历史、记忆卡片或 API 密钥。卸载应用或清除浏览器数据将永久删除所有数据
 
-### 3. 删除权
-要求删除个人数据（"被遗忘权"）
-
-### 4. 限制权
-要求限制某些处理
-
-要行使这些权利，请通过应用的设置屏幕或支持联系我们。`
+由于本应用的运营者不持有任何用户数据，您无需向运营者发送访问或删除请求。`
       },
       retention: {
         title: "数据保留期",
         content: `
-- **账户信息**: 直到账户删除
-- **搜索历史和学习数据**: 直到账户删除或用户删除
-- **技术数据**: 收集后最多2年`
+- **设备本地的所有数据**（API 密钥、搜索历史、学习数据、设置）：仅保存在您的设备中，直到您删除、卸载应用或清除浏览器数据为止
+- 本应用运营者一方不保留任何数据`
       },
       contact: {
         title: "联系我们",
         content: `
-有关隐私的问题，请通过应用的设置屏幕联系我们。`
+有关隐私的问题，请通过项目的 GitHub 仓库提交 Issue 与我们联系。`
       }
     }
   }

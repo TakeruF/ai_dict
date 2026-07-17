@@ -27,9 +27,6 @@ const config: CapacitorConfig = {
       // Always return to app after auth
       presentationStyle: "popover",
     },
-    App: {
-      allowUrlInteractions: false, // Prevent unwanted URL handling
-    },
   },
 };
 

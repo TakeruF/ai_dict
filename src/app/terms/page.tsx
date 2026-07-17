@@ -19,30 +19,30 @@ const LANGUAGES = [
 const TERMS_CONTENT = {
   ja: {
     title: "利用規約",
-    lastUpdated: "最終更新日：2026年3月2日",
+    lastUpdated: "最終更新日：2026年7月17日",
     sections: {
       introduction: {
         title: "はじめに",
-        content: `本利用規約（以下「本規約」）は、AI Dict（以下「当サービス」）の利用条件を定めるものです。当サービスをご利用いただく際には、本規約に同意いただいたものとみなします。`
+        content: `本利用規約（以下「本規約」）は、AI Dict（以下「当サービス」）の利用条件を定めるものです。当サービスをご利用いただく際には、本規約に同意いただいたものとみなします。当サービスはアカウント登録を必要とせず、運営者が管理するサーバーを持ちません。`
       },
       definitions: {
         title: "定義",
         content: `
 ### 1. 定義
-- **当サービス**: AI Dictアプリケーションおよび関連サービス
+- **当サービス**: AI Dictアプリケーションおよび関連コンテンツ
 - **ユーザー**: 当サービスを利用する個人
 - **コンテンツ**: 当サービス上で提供される辞書データ、翻訳結果、学習素材等
-- **個人データ**: ユーザーの検索履歴、学習進捗、設定情報等`
+- **ユーザーデータ**: ユーザーの検索履歴、学習進捗、APIキー、設定情報等（すべてユーザーの端末内にのみ保存されます）`
       },
       service: {
         title: "サービス内容",
         content: `
 ### 1. 提供サービス
 当サービスは以下の機能を提供します：
-- AI翻訳・辞書機能
+- AI翻訳・辞書機能（ユーザー自身が設定したAPIキーを用いて、端末から各AIプロバイダーへ直接接続）
 - HSK学習教材の提供
-- 学習進捗管理機能
-- 検索履歴管理機能
+- 学習進捗管理機能（端末内で完結）
+- 検索履歴管理機能（端末内で完結）
 
 ### 2. サービスの変更・停止
 当社は事前通知なしにサービス内容を変更、追加、または停止することがあります。`
@@ -56,6 +56,7 @@ const TERMS_CONTENT = {
 - 第三者の権利を侵害しないこと
 - 法令・規則を遵守すること
 - サービスの正常な運営を妨げないこと
+- ご自身が接続するAIプロバイダーの利用規約を遵守すること
 
 ### 2. 禁止行為
 以下の行為は禁止されています：
@@ -65,19 +66,17 @@ const TERMS_CONTENT = {
 - 著作権侵害行為
 - その他法令に違反する行為`
       },
-      account: {
-        title: "アカウント管理",
+      apiKeys: {
+        title: "APIキーとご自身での費用負担",
         content: `
-### 1. アカウント作成
-- 正確な情報を提供すること
-- アカウント情報の管理責任はユーザーにあります
-- 1人につき1つのアカウントのみ作成可能です
+### 1. APIキーの管理
+当サービスの辞書検索機能を利用するには、ユーザー自身がAnthropic・Google・OpenAI・DeepSeek・OpenRouter等のAIプロバイダーからAPIキーを取得し、アプリの設定画面に入力する必要があります。当該APIキーはユーザーの端末にのみ保存され、当社のサーバーに送信・保存されることはありません。
 
-### 2. アカウント停止・削除
-以下の場合、アカウントを停止・削除することがあります：
-- 本規約違反
-- 長期間の利用停止
-- その他当社が不適切と判断した場合`
+### 2. 費用負担
+APIキーの利用によって発生する費用は、各AIプロバイダーとユーザーとの契約に基づき、ユーザーご自身の負担となります。当社は当該費用について一切の責任を負いません。
+
+### 3. APIキーの安全管理
+APIキーの管理・保護（第三者への漏洩防止を含む）はユーザーの責任で行うものとします。`
       },
       intellectual: {
         title: "知的財産権",
@@ -88,7 +87,7 @@ const TERMS_CONTENT = {
 
 ### 2. ユーザーデータ
 - ユーザーが作成した学習データ等の権利はユーザーに帰属します
-- 当社はサービス提供のために必要な範囲でデータを利用します
+- 当該データはユーザーの端末内にのみ保存され、当社が取得・利用することはありません
 
 ### 3. 第三者コンテンツ
 - HSK等の学習素材は各権利者に帰属します
@@ -97,7 +96,7 @@ const TERMS_CONTENT = {
       privacy: {
         title: "プライバシー・データ保護",
         content: `
-個人情報の取扱いについては、別途定める「プライバシーポリシー」をご確認ください。ユーザーは当該プライバシーポリシーに同意するものとします。`
+個人情報の取扱いについては、別途定める「プライバシーポリシー」をご確認ください。当サービスは運営者が管理するサーバーを持たないため、ユーザーデータはすべてユーザーの端末内にのみ保存されます。ユーザーは当該プライバシーポリシーに同意するものとします。`
       },
       liability: {
         title: "免責事項",
@@ -105,12 +104,13 @@ const TERMS_CONTENT = {
 ### 1. サービス品質
 - 翻訳精度や辞書情報の正確性を保証するものではありません
 - サービス中断やデータ損失について責任を負いません
+- ユーザーの端末に保存されたデータ（APIキー、検索履歴、学習データ等）の消失について責任を負いません
 
 ### 2. 損害賠償
 当社の責任は、故意または重過失による場合を除き、直接損害に限定され、その額はユーザーが支払った料金に限定されます。
 
 ### 3. 第三者サービス
-AIプロバイダー等の第三者サービスに関する責任は負いません。`
+AIプロバイダー等の第三者サービスの品質、可用性、料金、規約違反、およびそれらに起因する損害について、当社は一切の責任を負いません。`
       },
       modification: {
         title: "規約の変更",
@@ -121,13 +121,13 @@ AIプロバイダー等の第三者サービスに関する責任は負いませ
         title: "契約の終了",
         content: `
 ### 1. ユーザーによる終了
-アプリのアンインストールまたはアカウント削除により契約を終了できます。
+アプリをアンインストールする、またはブラウザのデータを消去することで、いつでも利用を終了できます。当サービスはアカウントを持たないため、別途「解約」の手続きは不要です。
 
 ### 2. 当社による終了
-本規約違反その他の理由により、事前通知なしに契約を終了することがあります。
+本規約違反その他の理由により、事前通知なしにサービス提供を終了することがあります。
 
 ### 3. 終了後の処理
-契約終了後、ユーザーデータは合理的期間内に削除されます。`
+ユーザーデータはユーザーの端末内にのみ存在するため、アンインストールまたはブラウザデータの消去により直ちに削除されます。`
       },
       governing: {
         title: "準拠法・管轄",
@@ -137,36 +137,36 @@ AIプロバイダー等の第三者サービスに関する責任は負いませ
       contact: {
         title: "お問い合わせ",
         content: `
-本規約に関するお問い合わせは、アプリ内の設定画面からご連絡ください。`
+本規約に関するお問い合わせは、GitHubリポジトリのIssueからご連絡ください。`
       }
     }
   },
   en: {
     title: "Terms of Service",
-    lastUpdated: "Last updated: March 2, 2026",
+    lastUpdated: "Last updated: July 17, 2026",
     sections: {
       introduction: {
         title: "Introduction",
-        content: `These Terms of Service ("Terms") govern your use of AI Dict ("Service"). By using the Service, you agree to be bound by these Terms.`
+        content: `These Terms of Service ("Terms") govern your use of AI Dict ("Service"). By using the Service, you agree to be bound by these Terms. The Service requires no account and the operator runs no server.`
       },
       definitions: {
         title: "Definitions",
         content: `
 ### 1. Definitions
-- **Service**: AI Dict application and related services
-- **User**: Individual using the Service
+- **Service**: The AI Dict application and its related content
+- **User**: An individual using the Service
 - **Content**: Dictionary data, translation results, learning materials, etc. provided through the Service
-- **Personal Data**: User's search history, learning progress, settings, etc.`
+- **User Data**: Your search history, learning progress, API key, and settings — all stored only on your own device`
       },
       service: {
         title: "Service Description",
         content: `
 ### 1. Provided Services
 The Service provides the following features:
-- AI translation and dictionary functions
+- AI translation and dictionary lookup (using the API key you configure, connecting from your device directly to your chosen AI provider)
 - HSK learning materials
-- Learning progress management
-- Search history management
+- Learning progress management (entirely on-device)
+- Search history management (entirely on-device)
 
 ### 2. Service Changes/Suspension
 We may modify, add, or suspend service features without prior notice.`
@@ -177,9 +177,10 @@ We may modify, add, or suspend service features without prior notice.`
 ### 1. Appropriate Use
 Users must comply with the following:
 - Use only for personal learning purposes
-- Not infringe on third party rights
+- Not infringe on third-party rights
 - Comply with applicable laws and regulations
 - Not interfere with normal service operations
+- Comply with the terms of service of any AI provider you connect to
 
 ### 2. Prohibited Actions
 The following actions are prohibited:
@@ -189,19 +190,17 @@ The following actions are prohibited:
 - Copyright infringement
 - Other activities violating applicable laws`
       },
-      account: {
-        title: "Account Management",
+      apiKeys: {
+        title: "API Keys & Your Own Costs",
         content: `
-### 1. Account Creation
-- Provide accurate information
-- Users are responsible for managing account information
-- Only one account per person is allowed
+### 1. Managing Your API Key
+To use the dictionary lookup feature, you must obtain your own API key from an AI provider (Anthropic, Google, OpenAI, DeepSeek, OpenRouter, etc.) and enter it in the app's Settings. That key is stored only on your device and is never sent to or stored by us.
 
-### 2. Account Suspension/Deletion
-Accounts may be suspended or deleted in the following cases:
-- Violation of these Terms
-- Long-term inactivity
-- Other cases deemed inappropriate by us`
+### 2. Your Costs
+Any costs incurred from using your API key are governed by your own agreement with that provider and are entirely your responsibility. We bear no responsibility for those costs.
+
+### 3. Key Security
+You are solely responsible for keeping your API key secure, including preventing its exposure to third parties.`
       },
       intellectual: {
         title: "Intellectual Property Rights",
@@ -211,17 +210,17 @@ Accounts may be suspended or deleted in the following cases:
 - Service names, logos, and other trademarks belong to us
 
 ### 2. User Data
-- Rights to user-created learning data belong to users
-- We use data only as necessary for service provision
+- Rights to learning data you create belong to you
+- That data is stored only on your device — we never obtain or use it
 
 ### 3. Third-Party Content
-- Learning materials like HSK belong to respective rights holders
+- Learning materials like HSK belong to their respective rights holders
 - AI translation result copyrights are subject to each AI model provider's terms`
       },
       privacy: {
         title: "Privacy & Data Protection",
         content: `
-For information handling, please refer to our separate "Privacy Policy". Users agree to the Privacy Policy.`
+For information handling, please refer to our separate "Privacy Policy". Because the Service runs no server operated by us, all user data is stored only on your own device. By using the Service, you agree to the Privacy Policy.`
       },
       liability: {
         title: "Disclaimer",
@@ -229,12 +228,13 @@ For information handling, please refer to our separate "Privacy Policy". Users a
 ### 1. Service Quality
 - We do not guarantee translation accuracy or dictionary information accuracy
 - We are not responsible for service interruptions or data loss
+- We are not responsible for the loss of data stored on your device (API key, search history, learning data, etc.)
 
 ### 2. Liability for Damages
 Except for cases of willful misconduct or gross negligence, our liability is limited to direct damages and capped at fees paid by users.
 
 ### 3. Third-Party Services
-We are not responsible for AI providers and other third-party services.`
+We bear no responsibility for the quality, availability, pricing, terms violations, or any resulting damages of AI providers or other third-party services you connect to.`
       },
       modification: {
         title: "Terms Modification",
@@ -245,13 +245,13 @@ We may modify these Terms as necessary. Important changes will be notified throu
         title: "Contract Termination",
         content: `
 ### 1. User Termination
-Users can terminate by uninstalling the app or deleting their account.
+You may stop using the Service at any time by uninstalling the app or clearing your browser data. Since the Service has no accounts, no separate cancellation process is required.
 
 ### 2. Our Termination
-We may terminate without prior notice for Terms violations or other reasons.
+We may discontinue the Service without prior notice for Terms violations or other reasons.
 
 ### 3. Post-Termination Processing
-User data will be deleted within a reasonable period after contract termination.`
+Because your data exists only on your own device, uninstalling the app or clearing your browser data deletes it immediately.`
       },
       governing: {
         title: "Governing Law & Jurisdiction",
@@ -261,36 +261,36 @@ These Terms are governed by Japanese law. Disputes related to these Terms shall 
       contact: {
         title: "Contact Us",
         content: `
-For inquiries about these Terms, please contact us through the app's settings screen.`
+For inquiries about these Terms, please open an issue on the project's GitHub repository.`
       }
     }
   },
   zh: {
     title: "服务条款",
-    lastUpdated: "最后更新：2026年3月2日",
+    lastUpdated: "最后更新：2026年7月17日",
     sections: {
       introduction: {
         title: "简介",
-        content: `本服务条款（以下简称"本条款"）规定了使用AI Dict（以下简称"本服务"）的条件。使用本服务即表示您同意受本条款约束。`
+        content: `本服务条款（以下简称"本条款"）规定了使用AI Dict（以下简称"本服务"）的条件。使用本服务即表示您同意受本条款约束。本服务无需账户，运营者也不运行任何服务器。`
       },
       definitions: {
         title: "定义",
         content: `
 ### 1. 定义
-- **本服务**: AI Dict应用程序及相关服务
+- **本服务**: AI Dict应用程序及其相关内容
 - **用户**: 使用本服务的个人
 - **内容**: 通过本服务提供的词典数据、翻译结果、学习材料等
-- **个人数据**: 用户的搜索历史、学习进度、设置等`
+- **用户数据**: 您的搜索历史、学习进度、API 密钥及设置等，均仅保存在您自己的设备上`
       },
       service: {
         title: "服务说明",
         content: `
 ### 1. 提供的服务
 本服务提供以下功能：
-- AI翻译和词典功能
+- AI翻译和词典查询功能（使用您自行配置的 API 密钥，从您的设备直接连接到所选的 AI 服务商）
 - HSK学习材料
-- 学习进度管理
-- 搜索历史管理
+- 学习进度管理（完全在设备本地完成）
+- 搜索历史管理（完全在设备本地完成）
 
 ### 2. 服务变更/暂停
 我们可能在不事先通知的情况下修改、添加或暂停服务功能。`
@@ -304,6 +304,7 @@ For inquiries about these Terms, please contact us through the app's settings sc
 - 不侵犯第三方权利
 - 遵守适用的法律法规
 - 不干扰正常的服务运营
+- 遵守您所连接的 AI 服务商的服务条款
 
 ### 2. 禁止行为
 以下行为被禁止：
@@ -313,19 +314,17 @@ For inquiries about these Terms, please contact us through the app's settings sc
 - 版权侵犯
 - 其他违反适用法律的活动`
       },
-      account: {
-        title: "账户管理",
+      apiKeys: {
+        title: "API 密钥与自行承担的费用",
         content: `
-### 1. 账户创建
-- 提供准确信息
-- 用户负责管理账户信息
-- 每人只能创建一个账户
+### 1. API 密钥的管理
+使用词典查询功能前，您需要自行从 AI 服务商（Anthropic、Google、OpenAI、DeepSeek、OpenRouter 等）获取 API 密钥，并在应用的设置页面中输入。该密钥仅保存在您的设备上，不会被发送给我们或由我们保存。
 
-### 2. 账户暂停/删除
-在以下情况下可能暂停或删除账户：
-- 违反本条款
-- 长期不活跃
-- 我们认为不当的其他情况`
+### 2. 费用承担
+因使用您的 API 密钥而产生的任何费用，均依据您与该服务商之间的协议，由您自行承担。我们对此不承担任何责任。
+
+### 3. 密钥安全
+您应自行负责妥善保管 API 密钥，包括防止其泄露给第三方。`
       },
       intellectual: {
         title: "知识产权",
@@ -335,8 +334,8 @@ For inquiries about these Terms, please contact us through the app's settings sc
 - 服务名称、徽标和其他商标属于我们
 
 ### 2. 用户数据
-- 用户创建的学习数据的权利属于用户
-- 我们仅在提供服务所需的范围内使用数据
+- 您创建的学习数据的权利属于您
+- 该数据仅保存在您的设备上——我们不会获取或使用它
 
 ### 3. 第三方内容
 - HSK等学习材料属于各自的权利持有者
@@ -345,7 +344,7 @@ For inquiries about these Terms, please contact us through the app's settings sc
       privacy: {
         title: "隐私和数据保护",
         content: `
-有关信息处理，请参阅我们单独的"隐私政策"。用户同意隐私政策。`
+有关信息处理，请参阅我们单独的"隐私政策"。由于本服务不运行任何由我们运营的服务器，所有用户数据均仅保存在您自己的设备上。使用本服务即表示您同意隐私政策。`
       },
       liability: {
         title: "免责声明",
@@ -353,12 +352,13 @@ For inquiries about these Terms, please contact us through the app's settings sc
 ### 1. 服务质量
 - 我们不保证翻译准确性或词典信息准确性
 - 我们不对服务中断或数据丢失负责
+- 我们不对保存在您设备上的数据（API 密钥、搜索历史、学习数据等）的丢失负责
 
 ### 2. 损害赔偿责任
 除故意不当行为或重大过失外，我们的责任限于直接损害，并以用户支付的费用为上限。
 
 ### 3. 第三方服务
-我们不对AI提供商和其他第三方服务负责。`
+对于您所连接的 AI 服务商或其他第三方服务的质量、可用性、价格、违约行为及由此造成的任何损害，我们不承担任何责任。`
       },
       modification: {
         title: "条款修改",
@@ -369,13 +369,13 @@ For inquiries about these Terms, please contact us through the app's settings sc
         title: "合同终止",
         content: `
 ### 1. 用户终止
-用户可以通过卸载应用或删除账户来终止。
+您可以随时通过卸载应用或清除浏览器数据来停止使用本服务。由于本服务没有账户体系，因此无需另行办理"注销"手续。
 
 ### 2. 我们的终止
-我们可能因违反条款或其他原因在不事先通知的情况下终止。
+我们可能因违反条款或其他原因在不事先通知的情况下终止提供服务。
 
 ### 3. 终止后处理
-合同终止后，用户数据将在合理期间内删除。`
+由于您的数据仅存在于您自己的设备上，卸载应用或清除浏览器数据将立即删除全部数据。`
       },
       governing: {
         title: "管辖法律和司法管辖权",
@@ -385,7 +385,7 @@ For inquiries about these Terms, please contact us through the app's settings sc
       contact: {
         title: "联系我们",
         content: `
-有关本条款的询问，请通过应用的设置屏幕联系我们。`
+有关本条款的询问，请通过项目的 GitHub 仓库提交 Issue 与我们联系。`
       }
     }
   }

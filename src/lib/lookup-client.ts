@@ -1,7 +1,8 @@
 /**
- * Client-side LLM lookup — used in the static Capacitor build.
- * Calls LLM providers directly from the browser (no server proxy).
- * The Capacitor WebView uses https://localhost origin which passes CORS.
+ * The only lookup path — web and Capacitor both run this.
+ * Calls LLM providers directly from the browser with the user's own key;
+ * there is no server proxy, so the key never leaves the device.
+ * The Capacitor WebView uses an https://localhost origin, which passes CORS.
  */
 "use client";
 
@@ -67,8 +68,13 @@ async function callAnthropic(query: string, apiKey: string, systemPrompt: string
       "anthropic-dangerous-direct-browser-access": "true",
     },
     body: JSON.stringify({
-      model: "claude-sonnet-4-6",
+      model: "claude-sonnet-5",
       max_tokens: 1024,
+      // Sonnet 5 runs adaptive thinking by default when `thinking` is omitted
+      // (unlike 4.6). Thinking output shares the max_tokens budget with the
+      // JSON response, so leaving it on risks truncating the dictionary
+      // entry. Disable it to keep this a fast, deterministic JSON call.
+      thinking: { type: "disabled" },
       system: systemPrompt,
       messages: [{ role: "user", content: buildUserPrompt(query) }],
     }),
@@ -145,10 +151,11 @@ async function callOpenAICompat(
 }
 
 const callOpenAI = (q: string, k: string, p: string) =>
-  callOpenAICompat(q, k, "https://api.openai.com/v1", "gpt-4o", "OpenAI", p);
+  callOpenAICompat(q, k, "https://api.openai.com/v1", "gpt-5.4-mini", "OpenAI", p);
 
+// deepseek-chat is deprecated 2026-07-24; deepseek-v4-flash is its non-thinking-mode successor.
 const callDeepSeek = (q: string, k: string, p: string) =>
-  callOpenAICompat(q, k, "https://api.deepseek.com/v1", "deepseek-chat", "DeepSeek", p);
+  callOpenAICompat(q, k, "https://api.deepseek.com/v1", "deepseek-v4-flash", "DeepSeek", p);
 
 const callOpenRouter = (q: string, k: string, p: string) =>
   callOpenAICompat(
@@ -162,60 +169,20 @@ const callOpenRouter = (q: string, k: string, p: string) =>
   );
 
 // ── Main export ─────────────────────────────────────────────────────
-// ── Server-proxy lookup (for invitation code users) ─────────────────
-async function lookupViaServer(
-  query: string,
-  nativeLanguage: NativeLanguage,
-  direction: DictionaryDirection,
-  invitationCode: string,
-): Promise<DictionaryEntry> {
-  const res = await fetch("/api/lookup", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ query, invitationCode, nativeLanguage, direction }),
-  });
-
-  const data = await res.json();
-
-  if (!res.ok) {
-    const code = data.error ?? "server_error";
-    const message = data.message ?? code;
-    throw makeError(code, message, res.status);
-  }
-
-  // Handle not_found from server
-  if (data.error === "not_found") {
-    throw makeError("not_found", "not_found");
-  }
-
-  if (!isValidEntry(data)) {
-    throw makeError("server_error", "invalid_shape");
-  }
-
-  return data as DictionaryEntry;
-}
-
-// ── Main export ─────────────────────────────────────────────────────
 export async function lookupWord(
   query: string,
   apiKey: string,
   provider: string,
   nativeLanguage: NativeLanguage,
   direction: DictionaryDirection = "zh-ja",
-  invitationCode?: string,
 ): Promise<DictionaryEntry> {
   // Validate input to prevent infinite loops
   if (!query || query.length === 0) {
     throw makeError("invalid_query", "Query cannot be empty");
   }
-  
+
   if (query.length > 200) {
     throw makeError("invalid_query", "Query too long (max 200 characters)");
-  }
-
-  // If invitation code is provided, route through server (API key stays hidden)
-  if (invitationCode) {
-    return lookupViaServer(query, nativeLanguage, direction, invitationCode);
   }
 
   const cleanKey = sanitizeKey(apiKey);
