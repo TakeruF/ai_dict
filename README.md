@@ -11,7 +11,7 @@ AI-powered Chinese-Japanese dictionary with intelligent lookup, translation, and
 ## 📱 Download Android App
 
 **Beta APK available**: Download from GitHub Releases or website
-- Visit: [GitHub Releases](https://github.com/takeru/ai_dict/releases) 
+- Visit: [GitHub Releases](https://github.com/TakeruF/ai_dict/releases)
 - Or use the download button on [aidict.me](https://aidict.me)
 - **Auto-updates**: New releases are automatically built and published
 
