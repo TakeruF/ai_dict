@@ -10,6 +10,8 @@ AI-powered Chinese-Japanese dictionary with intelligent lookup, translation, and
 
 ## 📱 Download Android App
 
+[<img src="https://raw.githubusercontent.com/machiav3lli/oandbackupx/main/badge_github.png" alt="Get it on GitHub" height="60">](https://github.com/TakeruF/ai_dict/releases/latest)
+
 **Beta APK available**: Download from GitHub Releases or website
 - Visit: [GitHub Releases](https://github.com/TakeruF/ai_dict/releases)
 - Or use the download button on [aidict.me](https://aidict.me)
