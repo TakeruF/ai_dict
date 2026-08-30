@@ -63,7 +63,9 @@ jobs:
       run: |
         TAG_NAME=${GITHUB_REF#refs/tags/}
         APK_PATH="ai-dict-${TAG_NAME}.apk"
-        apksigner verify --verbose --print-certs "$APK_PATH"
+        APKSIGNER=$(find "$ANDROID_HOME/build-tools" -type f -name apksigner | sort -V | tail -1)
+        test -n "$APKSIGNER"
+        "$APKSIGNER" verify --verbose --print-certs "$APK_PATH"
         sha256sum "$APK_PATH" > "${APK_PATH}.sha256"
         
     - name: Get release info
