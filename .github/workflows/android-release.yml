@@ -6,6 +6,9 @@ on:
       - 'v*'  # v1.0.0, v1.1.0 等のタグでトリガー
   workflow_dispatch:  # 手動実行も可能
 
+permissions:
+  contents: write
+
 jobs:
   build-and-release:
     runs-on: ubuntu-latest
@@ -17,7 +20,7 @@ jobs:
     - name: Setup Node.js
       uses: actions/setup-node@v7
       with:
-        node-version: '20'
+        node-version: '22'
         cache: 'npm'
         
     - name: Setup Java JDK
@@ -48,35 +51,20 @@ jobs:
       run: |
         cd android
         ./gradlew assembleRelease
-        
-    - name: Sign APK (オプション - キーストアがある場合)
-      continue-on-error: true
-      run: |
-        if [ -n "${{ secrets.KEYSTORE_FILE }}" ]; then
-          echo "Keystore found, attempting to sign APK..."
-          echo "${{ secrets.KEYSTORE_FILE }}" | base64 -d > android/keystore.jks
-          cd android
-          ./gradlew assembleRelease \
-            -Pandroid.injected.signing.store.file=keystore.jks \
-            -Pandroid.injected.signing.store.password="${{ secrets.KEYSTORE_PASSWORD }}" \
-            -Pandroid.injected.signing.key.alias="${{ secrets.KEY_ALIAS }}" \
-            -Pandroid.injected.signing.key.password="${{ secrets.KEY_PASSWORD }}"
-        else
-          echo "No keystore found, creating unsigned APK..."
-          cd android
-          ./gradlew assembleRelease
-        fi
           
     - name: Rename APK
       run: |
         TAG_NAME=${GITHUB_REF#refs/tags/}
-        # 署名済みAPKが存在する場合はそれを使用、なければ未署名APKを使用
-        if [ -f "android/app/build/outputs/apk/release/app-release.apk" ]; then
-          APK_FILE="android/app/build/outputs/apk/release/app-release.apk"
-        else
-          APK_FILE="android/app/build/outputs/apk/release/app-release-unsigned.apk"
-        fi
+        APK_FILE="android/app/build/outputs/apk/release/app-release.apk"
+        test -f "$APK_FILE"
         mv "$APK_FILE" "ai-dict-${TAG_NAME}.apk"
+
+    - name: Verify release APK
+      run: |
+        TAG_NAME=${GITHUB_REF#refs/tags/}
+        APK_PATH="ai-dict-${TAG_NAME}.apk"
+        apksigner verify --verbose --print-certs "$APK_PATH"
+        sha256sum "$APK_PATH" > "${APK_PATH}.sha256"
         
     - name: Get release info
       id: release_info
@@ -103,7 +91,6 @@ jobs:
           
           ### 📊 ファイル情報
           - **サイズ**: ${{ steps.release_info.outputs.apk_size }} bytes
-          - **ビルド日**: $(date '+%Y-%m-%d %H:%M:%S UTC')
           - **対応OS**: Android 7.0+
           
           ### ⚠️ 重要な注意事項
@@ -113,6 +100,7 @@ jobs:
           
         files: |
           ${{ steps.release_info.outputs.apk_path }}
+          ${{ steps.release_info.outputs.apk_path }}.sha256
         generate_release_notes: true
         prerelease: ${{ contains(steps.release_info.outputs.tag_name, 'beta') || contains(steps.release_info.outputs.tag_name, 'alpha') }}
       env:

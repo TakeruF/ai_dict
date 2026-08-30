@@ -17,6 +17,11 @@ AI-powered Chinese-Japanese dictionary with intelligent lookup, translation, and
 - Or use the download button on [aidict.me](https://aidict.me)
 - **Auto-updates**: New releases are automatically built and published
 
+The Android app targets Android 16 (API 36), supports adaptive and themed
+launcher icons, and uses the platform splash-screen API. Before publishing a
+new build, run `npm run android:check`. See [ANDROID_RELEASE_CHECKLIST.md](ANDROID_RELEASE_CHECKLIST.md)
+for signing and store-readiness notes.
+
 ## 🚀 Features
 
 - **AI-Powered Search**: Intelligent Chinese-Japanese word lookup

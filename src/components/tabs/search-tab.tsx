@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef } from "react";
+import { useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Search, AlertCircle, CreditCard } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -70,11 +70,12 @@ export function SearchTab({ lang, direction, query, onNavigate }: SearchTabProps
 
   // Persist to history + optional auto-flashcard on first result
   const persistedRef = useRef<string>("");
-  if (isSuccess && data && query !== persistedRef.current) {
+  useEffect(() => {
+    if (!isSuccess || !data || query === persistedRef.current) return;
     persistedRef.current = query;
     addToHistory(query, data);
     if (settings.autoAddToFlashcards) addFlashCard(data);
-  }
+  }, [data, isSuccess, query, settings.autoAddToFlashcards]);
 
   const handleAddFlashcard = () => {
     if (!data) return;

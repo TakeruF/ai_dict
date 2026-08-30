@@ -21,6 +21,8 @@ export function HistoryTab({ lang, isVisible, onNavigate }: HistoryTabProps) {
   const [selected, setSelected] = useState<SearchHistoryItem | null>(null);
 
   useEffect(() => {
+    // Synchronize this view with localStorage whenever the tab becomes visible.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setHistory(getHistory());
   }, [isVisible]);
 

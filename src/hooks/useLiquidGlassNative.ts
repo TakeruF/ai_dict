@@ -1,5 +1,21 @@
 import { useEffect, useCallback } from "react";
 
+interface LiquidGlassEventDetail {
+  action: "tabChanged" | "search";
+  data: { index?: number; query?: string };
+}
+
+interface LiquidGlassPlugin {
+  syncTabState: (options: { index: number }, success: () => void, failure: () => void) => void;
+  handleSearch: (options: { query: string }, success: () => void, failure: () => void) => void;
+}
+
+declare global {
+  interface Window {
+    LiquidGlassPlugin?: LiquidGlassPlugin;
+  }
+}
+
 /**
  * Hook to communicate with native iOS Liquid Glass UI
  * Listens for events from native Swift code and sends commands back
@@ -7,8 +23,8 @@ import { useEffect, useCallback } from "react";
 export function useLiquidGlassNative() {
   const setupNativeCommunication = useCallback(() => {
     // Listen for native events (tab changes, searches)
-    window.addEventListener("liquidGlassEvent", (event: any) => {
-      const { action, data } = event.detail;
+    const handleLiquidGlassEvent = (event: Event) => {
+      const { action, data } = (event as CustomEvent<LiquidGlassEventDetail>).detail;
       
       // Handle native-initiated events
       switch (action) {
@@ -26,13 +42,15 @@ export function useLiquidGlassNative() {
         default:
           break;
       }
-    });
+    };
+    window.addEventListener("liquidGlassEvent", handleLiquidGlassEvent);
+    return () => window.removeEventListener("liquidGlassEvent", handleLiquidGlassEvent);
   }, []);
 
   const syncTabToNative = useCallback((tabIndex: number) => {
     // Send tab change to native
-    if (typeof window !== "undefined" && (window as any).LiquidGlassPlugin) {
-      (window as any).LiquidGlassPlugin.syncTabState(
+    if (typeof window !== "undefined" && window.LiquidGlassPlugin) {
+      window.LiquidGlassPlugin.syncTabState(
         { index: tabIndex },
         () => {},
         () => {}
@@ -42,8 +60,8 @@ export function useLiquidGlassNative() {
 
   const triggerSearchOnNative = useCallback((query: string) => {
     // Send search query to native
-    if (typeof window !== "undefined" && (window as any).LiquidGlassPlugin) {
-      (window as any).LiquidGlassPlugin.handleSearch(
+    if (typeof window !== "undefined" && window.LiquidGlassPlugin) {
+      window.LiquidGlassPlugin.handleSearch(
         { query },
         () => {},
         () => {}
@@ -52,7 +70,7 @@ export function useLiquidGlassNative() {
   }, []);
 
   useEffect(() => {
-    setupNativeCommunication();
+    return setupNativeCommunication();
   }, [setupNativeCommunication]);
 
   return {

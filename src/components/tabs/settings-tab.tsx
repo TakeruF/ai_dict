@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useSyncExternalStore } from "react";
 import { Eye, EyeOff, Save, Sun, Moon, Monitor, FileText, Lock } from "lucide-react";
 import { useTheme } from "next-themes";
 import { useRouter } from "next/navigation";
@@ -24,6 +24,8 @@ const PROVIDER_INFO: Record<
   openrouter: { model: "stepfun/step-3.5-flash:free",  input: "Free",   output: "Free",   perSearch: "Free",    freeTier: "Free (rate limited)", keyUrl: "openrouter.ai/keys" },
 };
 
+const subscribeToHydration = () => () => {};
+
 interface SettingsTabProps {
   lang: NativeLanguage;
   onLangChange: (lang: NativeLanguage) => void;
@@ -36,9 +38,7 @@ export function SettingsTab({ lang, onLangChange }: SettingsTabProps) {
   const router = useRouter();
   const [settings, setSettings] = useState<AppSettings>(getSettings());
   const [showKey, setShowKey]   = useState(false);
-  const [mounted, setMounted]   = useState(false);
-
-  useEffect(() => { setMounted(true); }, []);
+  const mounted = useSyncExternalStore(subscribeToHydration, () => true, () => false);
 
   const handleLangChange = (newLang: NativeLanguage) => {
     setSettings((s) => ({ ...s, nativeLanguage: newLang }));

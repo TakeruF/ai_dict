@@ -9,7 +9,9 @@ const config: CapacitorConfig = {
     iosScheme: "capacitor",
   },
   android: {
-    allowMixedContent: true,
+    // All production endpoints are HTTPS. Keep HTTP subresources blocked so
+    // API keys and lookup data cannot be downgraded to cleartext transport.
+    allowMixedContent: false,
     // Prevent browser opening for OAuth
     webContentsDebuggingEnabled: false,
   },

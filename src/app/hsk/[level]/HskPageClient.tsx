@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { Search, Volume2, ChevronLeft, X } from "lucide-react";
+import Link from "next/link";
 
 interface HskWord {
   index: number;
@@ -116,11 +117,9 @@ export function HskPageClient({ level }: { level: string }) {
 
   // Load words
   useEffect(() => {
-    if (!LEVEL_INFO[level]) {
-      setError("Invalid HSK level");
-      setLoading(false);
-      return;
-    }
+    if (!LEVEL_INFO[level]) return;
+    // Reset before loading a different external vocabulary resource.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(true);
     fetch(`/hsk/New-HSK-${level}-Word-List.csv`)
       .then((res) => {
@@ -149,11 +148,11 @@ export function HskPageClient({ level }: { level: string }) {
     );
   }, [words, search]);
 
-  // Reset visible count when search changes
-  useEffect(() => {
+  const handleSearchChange = (value: string) => {
+    setSearch(value);
     setVisibleCount(50);
     setExpandedId(null);
-  }, [search]);
+  };
 
   // Infinite scroll with IntersectionObserver
   useEffect(() => {
@@ -172,6 +171,8 @@ export function HskPageClient({ level }: { level: string }) {
   }, [visibleCount, filtered.length]);
 
   const info = LEVEL_INFO[level];
+  const displayError = info ? error : "Invalid HSK level";
+  const isLoading = Boolean(info) && loading;
   const visibleWords = filtered.slice(0, visibleCount);
 
   return (
@@ -180,13 +181,13 @@ export function HskPageClient({ level }: { level: string }) {
       <div className="sticky top-0 z-20 bg-background/95 backdrop-blur-sm border-b border-border/60">
         {/* Title bar */}
         <div className="flex items-center gap-3 px-4 py-3">
-          <a
+          <Link
             href="/"
             className="p-1.5 -ml-1.5 rounded-lg hover:bg-muted/60 active:scale-95 transition-all"
             aria-label="戻る"
           >
             <ChevronLeft className="h-5 w-5 text-muted-foreground" />
-          </a>
+          </Link>
           <div className="flex-1 min-w-0">
             <h1 className="text-lg font-bold tracking-tight truncate">
               HSK {level}
@@ -207,12 +208,12 @@ export function HskPageClient({ level }: { level: string }) {
               type="search"
               placeholder="検索..."
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(e) => handleSearchChange(e.target.value)}
               className="w-full pl-9 pr-9 py-2.5 text-sm rounded-xl border border-border/60 bg-muted/30 focus:bg-background focus:outline-none focus:ring-2 focus:ring-primary/40 transition-all"
             />
             {search && (
               <button
-                onClick={() => setSearch("")}
+                onClick={() => handleSearchChange("")}
                 className="absolute right-3 top-1/2 -translate-y-1/2 p-0.5 rounded-full bg-muted-foreground/20 hover:bg-muted-foreground/30 active:scale-90 transition-all"
                 aria-label="クリア"
               >
@@ -220,7 +221,7 @@ export function HskPageClient({ level }: { level: string }) {
               </button>
             )}
           </div>
-          {!loading && !error && (
+          {!isLoading && !displayError && (
             <p className="text-[10px] text-muted-foreground mt-2 text-center">
               {filtered.length === words.length
                 ? `全 ${words.length} 語`
@@ -232,16 +233,16 @@ export function HskPageClient({ level }: { level: string }) {
 
       {/* ── Word List ─────────────────────────────────── */}
       <div className="flex-1" ref={listRef}>
-        {loading ? (
+        {isLoading ? (
           <div className="flex items-center justify-center py-20">
             <div className="flex flex-col items-center gap-3">
               <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
               <p className="text-sm text-muted-foreground">読み込み中...</p>
             </div>
           </div>
-        ) : error ? (
+        ) : displayError ? (
           <div className="flex items-center justify-center py-20">
-            <p className="text-sm text-destructive">{error}</p>
+            <p className="text-sm text-destructive">{displayError}</p>
           </div>
         ) : filtered.length === 0 ? (
           <div className="flex items-center justify-center py-20">

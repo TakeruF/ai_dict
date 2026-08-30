@@ -1,5 +1,9 @@
 apply plugin: 'com.android.application'
 
+def packageMetadata = new groovy.json.JsonSlurper().parse(rootProject.file('../package.json'))
+def versionParts = packageMetadata.version.tokenize('.').collect { it as int }
+def packageVersionCode = (versionParts[0] * 10000) + (versionParts[1] * 100) + versionParts[2]
+
 android {
     namespace = "com.aidict.app"
     compileSdkVersion rootProject.ext.compileSdkVersion
@@ -7,8 +11,10 @@ android {
         applicationId "com.aidict.app"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 3
-        versionName "0.3.0"
+        // Keep the native package aligned with package.json. For example,
+        // 0.4.0 becomes versionCode 400 and versionName 0.4.0.
+        versionCode packageVersionCode
+        versionName packageMetadata.version
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.

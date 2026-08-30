@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
-import { Search, Brain, Clock, BookOpen, Settings, X, Loader2 } from "lucide-react";
+import { useState, useEffect, useRef, useCallback, useSyncExternalStore } from "react";
+import { Search, Brain, Clock, BookOpen, Settings, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { SearchTab } from "@/components/tabs/search-tab";
 import { MemorizeTab } from "@/components/tabs/memorize-tab";
@@ -24,6 +24,7 @@ const TABS = [
 const SEARCH_IDX   = 0;
 const SETTINGS_IDX = 4;
 const SWIPE_THRESHOLD = 50;
+const subscribeToHydration = () => () => {};
 
 // ── First-run language picker ───────────────────────────────────────
 function LanguagePicker({
@@ -71,8 +72,8 @@ function LanguagePicker({
 
 // ── Main app ────────────────────────────────────────────────────────
 export default function Home() {
-  const [mounted, setMounted]         = useState(false);
-  const [lang, setLang]               = useState<NativeLanguage | null>(null);
+  const mounted = useSyncExternalStore(subscribeToHydration, () => true, () => false);
+  const [lang, setLang] = useState<NativeLanguage | null>(() => getSettings().nativeLanguage);
   const [direction, setDirection]     = useState<DictionaryDirection>("zh-ja");
   const [tabIndex, setTabIndex]       = useState(0);
   const [searchInput, setSearchInput] = useState("");
@@ -96,8 +97,6 @@ export default function Home() {
 
   // ── Load settings ────────────────────────────────────────────────
   useEffect(() => {
-    setLang(getSettings().nativeLanguage);
-    setMounted(true);
     // With adjustNothing, window.innerHeight stays fixed and visualViewport.height
     // shrinks by the keyboard height — use that delta to position the bottom bar.
     const vv = window.visualViewport;
@@ -266,7 +265,7 @@ export default function Home() {
                   }`}
                 >
                   <tab.Icon className={`h-4 w-4 shrink-0 ${isActive ? "stroke-[2.5]" : "stroke-2"}`} />
-                  {isEn ? tab.labelEn : isZh ? (tab as any).labelZh : tab.labelJa}
+                  {isEn ? tab.labelEn : isZh ? tab.labelZh : tab.labelJa}
                 </button>
               );
             })}
@@ -434,7 +433,7 @@ export default function Home() {
               >
                 <tab.Icon className={`h-5 w-5 transition-all ${isActive ? "stroke-[2.5]" : "stroke-2"}`} />
                 <span className="text-[10px] font-medium leading-none">
-                  {isEn ? tab.labelEn : isZh ? (tab as any).labelZh : tab.labelJa}
+                  {isEn ? tab.labelEn : isZh ? tab.labelZh : tab.labelJa}
                 </span>
               </button>
             );

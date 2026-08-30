@@ -37,7 +37,6 @@ function stripFences(raw: string): string {
 
 // ── Sanitize API key ────────────────────────────────────────────────
 function sanitizeKey(key: string): string {
-  // eslint-disable-next-line no-control-regex
   return key.replace(/[^\x20-\x7E]/g, "").trim();
 }
 

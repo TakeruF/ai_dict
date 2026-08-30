@@ -292,6 +292,8 @@ function HskSheet({ level, label, direction, onClose }: { level: number; label: 
     : `/hsk-en/New-HSK-${level}-Word-List.csv`;
 
   useEffect(() => {
+    // Reset the sheet before loading a different external CSV resource.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(true);
     setWords([]);
     setSearch("");

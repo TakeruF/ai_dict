@@ -73,7 +73,7 @@ function QuizRunner({ questions, lang, onComplete }: QuizRunnerProps) {
   const [idx, setIdx] = useState(0);
   const [selected, setSelected] = useState<number | null>(null);
   const [results, setResults] = useState<boolean[]>([]);
-  const { lightImpact, successNotification, errorNotification } = useHaptics();
+  const { successNotification, errorNotification } = useHaptics();
 
   const current = questions[idx];
   const isAnswered = selected !== null;
@@ -583,6 +583,8 @@ function SrsSection({ lang, isVisible }: { lang: NativeLanguage; isVisible?: boo
 
   useEffect(() => { 
     if (isVisible) {
+      // Synchronize the review queue with localStorage when this tab opens.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       refresh(); 
     }
   }, [isVisible, refresh]);
