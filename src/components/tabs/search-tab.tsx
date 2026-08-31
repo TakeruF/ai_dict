@@ -129,10 +129,10 @@ function EmptyState({ lang }: { lang: NativeLanguage }) {
         </p>
         <p className="text-xs text-muted-foreground mt-1">
           {isEn
-            ? "Use the search bar below ↓"
+            ? "Type a word in the search field"
             : isZh
-            ? "使用下面的搜索栏 ↓"
-            : "下の検索バーから入力してください ↓"}
+            ? "在搜索栏中输入词语"
+            : "検索欄にことばを入力してください"}
         </p>
       </div>
       <div className="flex flex-wrap gap-2 justify-center mt-1">

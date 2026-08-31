@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback, useSyncExternalStore } from "react";
-import { Search, Brain, Clock, BookOpen, Settings, X } from "lucide-react";
+import { Search, Brain, Clock, BookOpen, Settings, X, ArrowRight, Download, Languages } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { SearchTab } from "@/components/tabs/search-tab";
 import { MemorizeTab } from "@/components/tabs/memorize-tab";
@@ -26,46 +26,116 @@ const SETTINGS_IDX = 4;
 const SWIPE_THRESHOLD = 50;
 const subscribeToHydration = () => () => {};
 
+function rubberband(overshoot: number, dimension: number, constant = 0.55) {
+  return (overshoot * dimension * constant) / (dimension + constant * Math.abs(overshoot));
+}
+
+function projectVelocity(velocity: number, decelerationRate = 0.99) {
+  return (velocity / 1000) * decelerationRate / (1 - decelerationRate);
+}
+
 // ── First-run language picker ───────────────────────────────────────
 function LanguagePicker({
   onSelect,
 }: {
   onSelect: (lang: NativeLanguage, direction: DictionaryDirection) => void;
 }) {
+  const options = [
+    {
+      code: "中",
+      title: "中国語AI辞書",
+      detail: "日本語で意味と使い方を理解する",
+      meta: "日本語話者向け",
+      onSelect: () => onSelect("ja", "zh-ja"),
+    },
+    {
+      code: "EN",
+      title: "Chinese AI Dictionary",
+      detail: "Learn meanings and usage in English",
+      meta: "For English speakers",
+      onSelect: () => onSelect("en", "zh-en"),
+    },
+    {
+      code: "日",
+      title: "日语AI词典",
+      detail: "用中文理解日语的含义与用法",
+      meta: "面向中文用户",
+      onSelect: () => onSelect("zh", "ja-zh"),
+    },
+  ];
+
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center gap-10 px-6 bg-background">
-      <div className="text-center space-y-2">
-        <h1 className="text-4xl font-bold tracking-tight">AI 辞書</h1>
-        <p className="text-muted-foreground">AI Dictionary</p>
-      </div>
-      <div className="flex flex-col gap-4 w-full max-w-sm">
-        {/* Japanese speakers - Chinese learning */}
-        <button
-          onClick={() => onSelect("ja", "zh-ja")}
-          className="rounded-2xl border-2 border-border hover:border-primary hover:bg-primary/5 active:scale-[0.98] transition-all p-5 text-center"
-        >
-          <p className="text-lg font-bold">中国語AI辞書</p>
-          <p className="text-xs text-muted-foreground mt-1">日本語話者向け</p>
-        </button>
+    <main className="welcome-shell min-h-screen px-5 py-8 sm:px-8">
+      <div className="welcome-orb welcome-orb-one" aria-hidden="true" />
+      <div className="welcome-orb welcome-orb-two" aria-hidden="true" />
 
-        {/* English speakers - Chinese learning */}
-        <button
-          onClick={() => onSelect("en", "zh-en")}
-          className="rounded-2xl border-2 border-border hover:border-primary hover:bg-primary/5 active:scale-[0.98] transition-all p-5 text-center"
-        >
-          <p className="text-lg font-bold">Chinese AI Dictionary</p>
-          <p className="text-xs text-muted-foreground mt-1">For English speakers</p>
-        </button>
+      <section className="welcome-panel" aria-labelledby="welcome-title">
+        <div className="welcome-mark" aria-hidden="true">
+          <Languages className="h-6 w-6" />
+        </div>
+        <p className="welcome-eyebrow">AI DICTIONARY</p>
+        <h1 id="welcome-title" className="welcome-title">ことばを、深く理解する。</h1>
+        <p className="welcome-copy">
+          意味だけでなく、発音や例文、使い方まで。<br className="hidden sm:block" />
+          あなたの言語に合わせて辞書を準備します。
+        </p>
 
-        {/* Chinese speakers - Japanese learning */}
-        <button
-          onClick={() => onSelect("zh", "ja-zh")}
-          className="rounded-2xl border-2 border-border hover:border-primary hover:bg-primary/5 active:scale-[0.98] transition-all p-5 text-center"
-        >
-          <p className="text-lg font-bold">日语AI词典</p>
-          <p className="text-xs text-muted-foreground mt-1">面向中文用户</p>
-        </button>
+        <div className="welcome-options" aria-label="表示言語を選択">
+          {options.map((option) => (
+            <button key={option.title} onClick={option.onSelect} className="language-option">
+              <span className="language-code">{option.code}</span>
+              <span className="min-w-0 flex-1 text-left">
+                <span className="language-title">{option.title}</span>
+                <span className="language-detail">{option.detail}</span>
+              </span>
+              <span className="language-meta">{option.meta}</span>
+              <ArrowRight className="language-arrow h-4 w-4" aria-hidden="true" />
+            </button>
+          ))}
+        </div>
+
+        <p className="welcome-footnote">あとから設定で変更できます</p>
+      </section>
+    </main>
+  );
+}
+
+function DesktopSearch({
+  value,
+  onChange,
+  onSearch,
+  onClear,
+  placeholder,
+  buttonLabel,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  onSearch: () => void;
+  onClear: () => void;
+  placeholder: string;
+  buttonLabel: string;
+}) {
+  return (
+    <div className="desktop-search-wrap">
+      <div className="desktop-search-field">
+        <Search className="h-[18px] w-[18px] shrink-0 text-muted-foreground" aria-hidden="true" />
+        <Input
+          value={value}
+          onChange={(event) => onChange(event.target.value)}
+          onKeyDown={(event) => event.key === "Enter" && onSearch()}
+          placeholder={placeholder}
+          className="h-11 border-0 bg-transparent p-0 text-[15px] shadow-none focus-visible:ring-0"
+        />
+        {value && (
+          <button onClick={onClear} className="search-clear" aria-label="Clear search">
+            <X className="h-3.5 w-3.5" />
+          </button>
+        )}
       </div>
+      <button onClick={onSearch} disabled={!value.trim()} className="desktop-search-button">
+        {buttonLabel}
+        <ArrowRight className="h-4 w-4" aria-hidden="true" />
+      </button>
     </div>
   );
 }
@@ -118,12 +188,14 @@ export default function Home() {
     if (!el) return;
 
     let startX = 0, startY = 0, curX = 0;
+    let samples: Array<{ x: number; time: number }> = [];
     let dir: "h" | "v" | null = null;
 
     const onStart = (e: TouchEvent) => {
       startX = e.touches[0].clientX;
       startY = e.touches[0].clientY;
       curX = startX;
+      samples = [{ x: startX, time: e.timeStamp }];
       dir = null;
       setDragX(0);
       setDragging(false);
@@ -135,7 +207,7 @@ export default function Home() {
       curX = e.touches[0].clientX;
 
       // Determine swipe direction once
-      if (!dir && (Math.abs(dx) > 6 || Math.abs(dy) > 6)) {
+      if (!dir && (Math.abs(dx) > 10 || Math.abs(dy) > 10)) {
         dir = Math.abs(dx) > Math.abs(dy) ? "h" : "v";
       }
 
@@ -143,19 +215,26 @@ export default function Home() {
         e.preventDefault(); // block vertical scroll during horizontal swipe
         setDragging(true);
         const idx = tabIdxRef.current;
-        // Rubber-band at edges: dampen by 30%
+        samples.push({ x: curX, time: e.timeStamp });
+        samples = samples.filter((sample) => e.timeStamp - sample.time <= 100);
+        // Progressively resist at the first and last tabs.
         const atEdge = (idx === 0 && dx > 0) || (idx === TABS.length - 1 && dx < 0);
-        setDragX(atEdge ? dx * 0.3 : dx);
+        setDragX(atEdge ? rubberband(dx, window.innerWidth) : dx);
       }
     };
 
     const onEnd = () => {
       if (dir !== "h") { setDragX(0); setDragging(false); return; }
       const dx = curX - startX;
+      const first = samples[0];
+      const last = samples[samples.length - 1];
+      const elapsed = first && last ? Math.max(1, last.time - first.time) : 1;
+      const velocity = first && last ? ((last.x - first.x) / elapsed) * 1000 : 0;
+      const projectedDx = dx + projectVelocity(velocity);
       setDragX(0);
       setDragging(false);
-      if (dx < -SWIPE_THRESHOLD) setTabIndex(p => Math.min(p + 1, TABS.length - 1));
-      else if (dx > SWIPE_THRESHOLD) setTabIndex(p => Math.max(p - 1, 0));
+      if (projectedDx < -SWIPE_THRESHOLD) setTabIndex(p => Math.min(p + 1, TABS.length - 1));
+      else if (projectedDx > SWIPE_THRESHOLD) setTabIndex(p => Math.max(p - 1, 0));
     };
 
     el.addEventListener("touchstart", onStart, { passive: true });
@@ -210,107 +289,84 @@ export default function Home() {
   const isZh     = lang === "zh";
   const title    = isEn ? "Chinese AI Dict" : isZh ? "日语AI词典" : "中国語AI辞書";
   const isNative = isCapacitor(); // safe: mounted guard ensures client-side
+  const activeTab = TABS[tabIndex];
+  const activeLabel = isEn ? activeTab.labelEn : isZh ? activeTab.labelZh : activeTab.labelJa;
+  const sectionDescriptions = isEn
+    ? ["Understand a word in context", "Review the words you saved", "Return to recent lookups", "Build your learning path", "Make the dictionary yours"]
+    : isZh
+      ? ["在语境中理解词语", "复习收藏的词语", "返回最近的查询", "建立你的学习路径", "按你的方式使用词典"]
+      : ["ことばを文脈まで理解する", "保存したことばを復習する", "最近調べたことばに戻る", "学習の道筋をつくる", "自分に合う辞書に整える"];
 
   // ── Desktop layout (web) ──────────────────────────────────────────
   if (!isNative) {
     return (
-      <div className="flex h-screen bg-background overflow-hidden text-foreground">
-        {/* Sidebar */}
-        <aside className="w-56 shrink-0 border-r border-border/60 flex flex-col">
-          <div className="px-5 py-4 border-b border-border/60 flex items-baseline gap-2">
-            <span className="text-base font-semibold tracking-tight">{title}</span>
-            <span className="text-[10px] text-muted-foreground border border-border/60 rounded-full px-1.5 py-0.5 font-mono">beta</span>
+      <div className="app-shell flex h-screen overflow-hidden text-foreground">
+        <aside className="desktop-sidebar">
+          <div className="brand-lockup">
+            <span className="brand-mark"><Languages className="h-[18px] w-[18px]" /></span>
+            <span className="min-w-0">
+              <span className="brand-name">{title}</span>
+              <span className="brand-caption">AI Dictionary · Beta</span>
+            </span>
           </div>
 
-          <div className="px-3 py-3 border-b border-border/40 space-y-2">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
-              <Input
-                value={searchInput}
-                onChange={(e) => setSearchInput(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-                placeholder={isEn ? "Search Chinese or English…" : isZh ? "用中文或日语搜索…" : "中国語または日本語で検索…"}
-                className="pl-9 pr-8 h-9 text-sm rounded-xl border-border/60 bg-muted/40 focus-visible:ring-1"
-              />
-              {searchInput && (
-                <button
-                  onClick={() => { setSearchInput(""); setActiveQuery(""); }}
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                  aria-label="Clear"
-                >
-                  <X className="h-3.5 w-3.5" />
-                </button>
-              )}
-            </div>
-            <button
-              onClick={handleSearch}
-              disabled={!searchInput.trim()}
-              className="w-full h-9 rounded-xl bg-primary text-primary-foreground text-sm font-medium disabled:opacity-40 transition-opacity"
-            >
-              {isEn ? "Search" : isZh ? "搜索" : "検索"}
-            </button>
-          </div>
-
-          <nav className="flex-1 overflow-y-auto p-2 space-y-0.5">
+          <nav className="desktop-nav" aria-label="Primary navigation">
             {TABS.map((tab, i) => {
               const isActive = tabIndex === i;
               return (
                 <button
                   key={tab.value}
                   onClick={() => setTabIndex(i)}
-                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-colors ${
-                    isActive
-                      ? "bg-primary/10 text-primary font-medium"
-                      : "text-muted-foreground hover:bg-muted/60 hover:text-foreground"
-                  }`}
+                  className={`desktop-nav-item ${isActive ? "is-active" : ""}`}
+                  aria-current={isActive ? "page" : undefined}
                 >
-                  <tab.Icon className={`h-4 w-4 shrink-0 ${isActive ? "stroke-[2.5]" : "stroke-2"}`} />
-                  {isEn ? tab.labelEn : isZh ? tab.labelZh : tab.labelJa}
+                  <span className="nav-icon"><tab.Icon className="h-[17px] w-[17px]" /></span>
+                  <span>{isEn ? tab.labelEn : isZh ? tab.labelZh : tab.labelJa}</span>
                 </button>
               );
             })}
           </nav>
 
-          {/* Android Download Section */}
-          <div className="p-2 space-y-2 border-t border-border/40">
-            <div className="px-3 py-2">
-              <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">
-                {isEn ? "Mobile App" : isZh ? "手机应用" : "モバイルアプリ"}
-              </h3>
-              <button
-                onClick={() => {
-                  if (typeof window !== 'undefined') {
-                    window.open('/android-download', '_blank');
-                  }
-                }}
-                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-colors bg-green-50 hover:bg-green-100 dark:bg-green-900/20 dark:hover:bg-green-900/30 text-green-700 dark:text-green-300 border border-green-200 dark:border-green-800"
-              >
-                <svg className="h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                  <polyline points="7,10 12,15 17,10" />
-                  <line x1="12" y1="15" x2="12" y2="3" />
-                </svg>
-                <div className="flex-1 text-left">
-                  <div className="font-medium">
-                    {isEn ? "Android App" : isZh ? "安卓应用" : "Android版"}
-                  </div>
-                  <div className="text-xs opacity-75">
-                    {isEn ? "Beta" : isZh ? "测试版" : "Beta"}
-                  </div>
-                </div>
-              </button>
-            </div>
-          </div>
+          <button
+            onClick={() => window.open("/android-download", "_blank")}
+            className="download-card"
+          >
+            <span className="download-icon"><Download className="h-4 w-4" /></span>
+            <span className="min-w-0 flex-1 text-left">
+              <span className="download-title">{isEn ? "Android app" : isZh ? "安卓应用" : "Androidアプリ"}</span>
+              <span className="download-caption">{isEn ? "Get the beta" : isZh ? "获取测试版" : "Beta版を入手"}</span>
+            </span>
+            <ArrowRight className="h-3.5 w-3.5 text-muted-foreground" />
+          </button>
         </aside>
 
-        {/* Main content */}
-        <main className="flex-1 overflow-y-auto">
-          <div className="max-w-3xl mx-auto px-8 py-8">
-            {tabIndex === 0 && <SearchTab lang={lang} direction={direction} query={activeQuery} onNavigate={navigateTo} />}
-            {tabIndex === 1 && <MemorizeTab lang={lang} isVisible={tabIndex === 1} />}
-            {tabIndex === 2 && <HistoryTab lang={lang} isVisible={tabIndex === 2} onNavigate={navigateTo} />}
-            {tabIndex === 3 && <ResourceTab lang={lang} direction={direction} isNative={false} />}
-            {tabIndex === 4 && <SettingsTab lang={lang} onLangChange={setLang} />}
+        <main className="desktop-main">
+          <header className="desktop-toolbar">
+            <DesktopSearch
+              value={searchInput}
+              onChange={setSearchInput}
+              onSearch={handleSearch}
+              onClear={() => { setSearchInput(""); setActiveQuery(""); }}
+              placeholder={isEn ? "Search Chinese or English" : isZh ? "输入中文或日语" : "中国語または日本語を入力"}
+              buttonLabel={isEn ? "Search" : isZh ? "搜索" : "調べる"}
+            />
+          </header>
+
+          <div className="desktop-scroll">
+            <div className="content-frame">
+              <div className="section-heading">
+                <p className="section-eyebrow">{title}</p>
+                <h1>{activeLabel}</h1>
+                <p>{sectionDescriptions[tabIndex]}</p>
+              </div>
+              <div className="content-surface">
+                {tabIndex === 0 && <SearchTab lang={lang} direction={direction} query={activeQuery} onNavigate={navigateTo} />}
+                {tabIndex === 1 && <MemorizeTab lang={lang} isVisible={tabIndex === 1} />}
+                {tabIndex === 2 && <HistoryTab lang={lang} isVisible={tabIndex === 2} onNavigate={navigateTo} />}
+                {tabIndex === 3 && <ResourceTab lang={lang} direction={direction} isNative={false} />}
+                {tabIndex === 4 && <SettingsTab lang={lang} onLangChange={setLang} />}
+              </div>
+            </div>
           </div>
         </main>
       </div>
@@ -320,11 +376,11 @@ export default function Home() {
   // ── Mobile layout (Android / native) ─────────────────────────────
   return (
     // 100dvh = dynamic viewport (accounts for mobile browser chrome)
-    <div style={{ display: "flex", flexDirection: "column", height: "100dvh" }} className="bg-background overflow-hidden">
+    <div style={{ display: "flex", flexDirection: "column", height: "100dvh" }} className="native-shell overflow-hidden">
 
       {/* ── Header ──────────────────────────────────────────── */}
       <header
-        className="shrink-0 bg-background/90 backdrop-blur-sm border-b border-border/60 flex items-end px-4 pb-3 z-40"
+        className="native-header shrink-0 flex items-end px-4 pb-3 z-40"
         style={{ paddingTop: "env(safe-area-inset-top)", minHeight: "calc(3rem + env(safe-area-inset-top))" }}
       >
         <span className="text-base font-semibold tracking-tight">{title}</span>
@@ -350,27 +406,27 @@ export default function Home() {
           }}
         >
           {/* 0 — Search */}
-          <div style={{ width: "100vw", height: "100%", overflowY: "auto" }} className="px-4 py-4">
+          <div style={{ width: "100vw", height: "100%", overflowY: "auto" }} className="native-panel px-4 py-4">
             <SearchTab lang={lang} direction={direction} query={activeQuery} onNavigate={navigateTo} />
           </div>
 
           {/* 1 — Memorize */}
-          <div style={{ width: "100vw", height: "100%", overflowY: "auto" }} className="px-4 py-4">
+          <div style={{ width: "100vw", height: "100%", overflowY: "auto" }} className="native-panel px-4 py-4">
             <MemorizeTab lang={lang} isVisible={tabIndex === 1} />
           </div>
 
           {/* 2 — History */}
-          <div style={{ width: "100vw", height: "100%", overflowY: "auto" }} className="px-4 py-4">
+          <div style={{ width: "100vw", height: "100%", overflowY: "auto" }} className="native-panel px-4 py-4">
             <HistoryTab lang={lang} isVisible={tabIndex === 2} onNavigate={navigateTo} />
           </div>
 
           {/* 3 — Resources */}
-          <div style={{ width: "100vw", height: "100%", overflowY: "auto" }} className="px-4 py-4">
+          <div style={{ width: "100vw", height: "100%", overflowY: "auto" }} className="native-panel px-4 py-4">
             <ResourceTab lang={lang} direction={direction} isNative={true} />
           </div>
 
           {/* 4 — Settings */}
-          <div style={{ width: "100vw", height: "100%", overflowY: "auto" }} className="px-4 py-4">
+          <div style={{ width: "100vw", height: "100%", overflowY: "auto" }} className="native-panel px-4 py-4">
             <SettingsTab lang={lang} onLangChange={setLang} />
           </div>
         </div>
@@ -379,7 +435,7 @@ export default function Home() {
       {/* ── Fixed bottom: search bar + tab nav ─────────────── */}
       {/* translateY lifts the bar above the keyboard (adjustNothing mode) */}
       <div
-        className="shrink-0 bg-background border-t border-border/60 z-50"
+        className="native-dock shrink-0 z-50"
         style={{
           transform: keyboardHeight > 0 ? `translateY(-${keyboardHeight}px)` : "translateY(0)",
           transition: "transform 0.15s ease-out",
@@ -387,15 +443,15 @@ export default function Home() {
       >
 
         {/* Search bar */}
-        <div className="h-14 flex items-center px-3 gap-2 border-b border-border/40">
+        <div className="native-search-row h-14 flex items-center px-3 gap-2">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
             <Input
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-              placeholder={isEn ? "Search Chinese or English…" : "中国語または日本語で検索…"}
-              className="pl-9 pr-8 h-9 text-sm rounded-xl border-border/60 bg-muted/40 focus-visible:ring-1"
+              placeholder={isEn ? "Search Chinese or English…" : isZh ? "输入中文或日语…" : "中国語または日本語で検索…"}
+              className="native-search-input pl-9 pr-8 h-10 text-sm rounded-[14px] focus-visible:ring-1"
             />
             {searchInput && (
               <button
@@ -410,7 +466,7 @@ export default function Home() {
           <button
             onClick={handleSearch}
             disabled={!searchInput.trim()}
-            className="shrink-0 h-9 px-4 rounded-xl bg-primary text-primary-foreground text-sm font-medium disabled:opacity-40 transition-opacity"
+            className="native-search-button shrink-0 h-10 px-4 rounded-[14px] bg-primary text-primary-foreground text-sm font-medium disabled:opacity-40"
           >
             {isEn ? "Search" : isZh ? "搜索" : "検索"}
           </button>
@@ -418,7 +474,7 @@ export default function Home() {
 
         {/* Tab navigation — hidden when soft keyboard is open */}
         {!keyboardOpen && <nav
-          className="h-14 flex items-stretch"
+          className="native-tabs h-14 flex items-stretch"
           style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
         >
           {TABS.map((tab, i) => {
@@ -427,8 +483,8 @@ export default function Home() {
               <button
                 key={tab.value}
                 onClick={() => setTabIndex(i)}
-                className={`flex-1 flex flex-col items-center justify-center gap-0.5 transition-colors ${
-                  isActive ? "text-primary" : "text-muted-foreground"
+                className={`native-tab flex-1 flex flex-col items-center justify-center gap-0.5 ${
+                  isActive ? "is-active text-primary" : "text-muted-foreground"
                 }`}
               >
                 <tab.Icon className={`h-5 w-5 transition-all ${isActive ? "stroke-[2.5]" : "stroke-2"}`} />
