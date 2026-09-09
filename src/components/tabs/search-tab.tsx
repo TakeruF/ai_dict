@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Search, AlertCircle, CreditCard } from "lucide-react";
+import { Search, AlertCircle, CreditCard, ExternalLink, KeyRound } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -89,7 +89,14 @@ export function SearchTab({ lang, direction, query, onNavigate }: SearchTabProps
   return (
     <div className="flex flex-col gap-4">
       {/* Empty state */}
-      {!query && !isFetching && <EmptyState lang={lang} />}
+      {!query && !isFetching && (
+        <EmptyState
+          lang={lang}
+          provider={settings.provider}
+          hasApiKey={settings.apiKey.trim().length > 0}
+          onNavigate={onNavigate}
+        />
+      )}
 
       {/* Loading skeleton */}
       {isFetching && <LoadingSkeleton />}
@@ -109,14 +116,80 @@ export function SearchTab({ lang, direction, query, onNavigate }: SearchTabProps
 
 // ── Sub-components ──────────────────────────────────────────────────
 
-function EmptyState({ lang }: { lang: NativeLanguage }) {
+const API_KEY_SOURCES: Record<string, { name: string; url: string }> = {
+  anthropic:  { name: "Anthropic Console", url: "https://console.anthropic.com/settings/keys" },
+  gemini:     { name: "Google AI Studio",  url: "https://aistudio.google.com/apikey" },
+  openai:     { name: "OpenAI Platform",   url: "https://platform.openai.com/api-keys" },
+  deepseek:   { name: "DeepSeek Platform", url: "https://platform.deepseek.com/api_keys" },
+  openrouter: { name: "OpenRouter",        url: "https://openrouter.ai/keys" },
+};
+
+function EmptyState({
+  lang,
+  provider,
+  hasApiKey,
+  onNavigate,
+}: {
+  lang: NativeLanguage;
+  provider: string;
+  hasApiKey: boolean;
+  onNavigate: (tab: string) => void;
+}) {
   const isEn = lang === "en";
   const isZh = lang === "zh";
+  const keySource = API_KEY_SOURCES[provider] ?? API_KEY_SOURCES.anthropic;
   const examples = isEn
     ? ["你好", "谢谢", "hello", "friend", "study"]
     : isZh
     ? ["你好", "さくら", "ありがとう", "友達", "勉強"]
     : ["你好", "谢谢", "ありがとう", "友達", "勉強する"];
+
+  if (!hasApiKey) {
+    return (
+      <div className="flex flex-col items-center justify-center py-12 gap-5 text-center">
+        <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center">
+          <KeyRound className="h-7 w-7 text-primary" />
+        </div>
+        <div className="max-w-md">
+          <p className="text-sm font-medium text-foreground">
+            {isEn ? "An API key is required to search" : isZh ? "搜索需要 API 密钥" : "検索にはAPIキーが必要です"}
+          </p>
+          <p className="text-xs text-muted-foreground mt-2 leading-relaxed">
+            {isEn
+              ? "AI creates the definitions, pronunciations, and example sentences. Your key connects this device directly to the selected AI provider."
+              : isZh
+                ? "单词释义、发音和例句由 AI 生成。API 密钥用于从本设备直接连接所选的 AI 服务商。"
+                : "単語の意味・発音・例文をAIで生成するために使用します。APIキーにより、この端末から選択したAIプロバイダーへ直接接続します。"}
+          </p>
+          <p className="text-xs text-muted-foreground mt-2 leading-relaxed">
+            {isEn
+              ? `Get a key from ${keySource.name}, then enter and save it in API Settings.`
+              : isZh
+                ? `请在 ${keySource.name} 获取密钥，然后前往“API设置”输入并保存。`
+                : `${keySource.name}でキーを取得し、「API設定」に入力して保存してください。`}
+          </p>
+        </div>
+        <div className="flex flex-wrap items-center justify-center gap-2">
+          <Button size="sm" onClick={() => onNavigate("settings")}>
+            {isEn ? "Open API Settings" : isZh ? "打开 API 设置" : "API設定を開く"}
+          </Button>
+          <Button size="sm" variant="outline" asChild>
+            <a href={keySource.url} target="_blank" rel="noopener noreferrer">
+              {isEn ? "Get an API key" : isZh ? "获取 API 密钥" : "APIキーを取得"}
+              <ExternalLink className="h-3.5 w-3.5 ml-1.5" />
+            </a>
+          </Button>
+        </div>
+        <p className="text-[11px] text-muted-foreground max-w-md leading-relaxed">
+          {isEn
+            ? "Your key is stored only on this device and is not sent to an AI Dict server. Provider usage fees may apply."
+            : isZh
+              ? "密钥仅保存在本设备，不会发送到 AI Dict 的服务器。服务商可能会收取使用费。"
+              : "キーはこの端末内だけに保存され、AI Dictのサーバーには送信されません。プロバイダーの利用料金がかかる場合があります。"}
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col items-center justify-center py-16 gap-4 text-center">

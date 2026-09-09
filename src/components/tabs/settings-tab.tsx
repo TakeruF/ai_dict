@@ -221,6 +221,13 @@ export function SettingsTab({ lang, onLangChange }: SettingsTabProps) {
                   : "APIキーはこの端末のLocalStorageにのみ保存されます。リクエストは端末から各プロバイダーへ直接送信され、当方はサーバーを一切持ちません。"}
             </p>
           </div>
+
+          <div className="flex justify-end pt-1">
+            <Button size="sm" onClick={handleSave} className="rounded-xl">
+              <Save className="h-4 w-4 mr-2" />
+              {isEn ? "Save API Settings" : isZh ? "保存 API 设置" : "API設定を保存"}
+            </Button>
+          </div>
         </div>
       </Section>
 
