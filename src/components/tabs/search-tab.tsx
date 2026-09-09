@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Search, AlertCircle, CreditCard, ExternalLink, KeyRound } from "lucide-react";
+import { Search, AlertCircle, CreditCard, KeyRound } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -92,7 +92,6 @@ export function SearchTab({ lang, direction, query, onNavigate }: SearchTabProps
       {!query && !isFetching && (
         <EmptyState
           lang={lang}
-          provider={settings.provider}
           hasApiKey={settings.apiKey.trim().length > 0}
           onNavigate={onNavigate}
         />
@@ -116,28 +115,17 @@ export function SearchTab({ lang, direction, query, onNavigate }: SearchTabProps
 
 // ── Sub-components ──────────────────────────────────────────────────
 
-const API_KEY_SOURCES: Record<string, { name: string; url: string }> = {
-  anthropic:  { name: "Anthropic Console", url: "https://console.anthropic.com/settings/keys" },
-  gemini:     { name: "Google AI Studio",  url: "https://aistudio.google.com/apikey" },
-  openai:     { name: "OpenAI Platform",   url: "https://platform.openai.com/api-keys" },
-  deepseek:   { name: "DeepSeek Platform", url: "https://platform.deepseek.com/api_keys" },
-  openrouter: { name: "OpenRouter",        url: "https://openrouter.ai/keys" },
-};
-
 function EmptyState({
   lang,
-  provider,
   hasApiKey,
   onNavigate,
 }: {
   lang: NativeLanguage;
-  provider: string;
   hasApiKey: boolean;
   onNavigate: (tab: string) => void;
 }) {
   const isEn = lang === "en";
   const isZh = lang === "zh";
-  const keySource = API_KEY_SOURCES[provider] ?? API_KEY_SOURCES.anthropic;
   const examples = isEn
     ? ["你好", "谢谢", "hello", "friend", "study"]
     : isZh
@@ -156,36 +144,30 @@ function EmptyState({
           </p>
           <p className="text-xs text-muted-foreground mt-2 leading-relaxed">
             {isEn
-              ? "AI creates the definitions, pronunciations, and example sentences. Your key connects this device directly to the selected AI provider."
+              ? "AI Dict uses AI to generate definitions, pronunciations, and example sentences. You can use an API key from any of these providers: Anthropic (Claude), OpenAI, Google (Gemini), DeepSeek, or OpenRouter."
               : isZh
-                ? "单词释义、发音和例句由 AI 生成。API 密钥用于从本设备直接连接所选的 AI 服务商。"
-                : "単語の意味・発音・例文をAIで生成するために使用します。APIキーにより、この端末から選択したAIプロバイダーへ直接接続します。"}
+                ? "AI Dict 使用 AI 生成单词释义、发音和例句。支持 Anthropic（Claude）、OpenAI、Google（Gemini）、DeepSeek 和 OpenRouter，使用其中任一服务商的 API 密钥即可。"
+                : "AI Dictは、単語の意味・発音・例文をAIで生成する辞書です。Anthropic（Claude）、OpenAI、Google（Gemini）、DeepSeek、OpenRouterのいずれかのAPIキーで利用できます。"}
           </p>
           <p className="text-xs text-muted-foreground mt-2 leading-relaxed">
             {isEn
-              ? `Get a key from ${keySource.name}, then enter and save it in API Settings.`
+              ? "Open API Settings and choose a provider. If you need a key, follow the API key link shown there to get one, then enter and save it. If you already have a key for your chosen provider, enter and save it to get started."
               : isZh
-                ? `请在 ${keySource.name} 获取密钥，然后前往“API设置”输入并保存。`
-                : `${keySource.name}でキーを取得し、「API設定」に入力して保存してください。`}
+                ? "请打开“API设置”并选择服务商，通过其中的密钥获取链接申请 API 密钥，再输入并保存。如果已有该服务商的密钥，可直接输入并保存。"
+                : "「API設定」で利用するプロバイダーを選び、表示される取得先リンクからAPIキーを取得して、入力・保存してください。すでにそのプロバイダーのキーをお持ちの場合は、入力・保存するだけで始められます。"}
           </p>
         </div>
         <div className="flex flex-wrap items-center justify-center gap-2">
           <Button size="sm" onClick={() => onNavigate("settings")}>
             {isEn ? "Open API Settings" : isZh ? "打开 API 设置" : "API設定を開く"}
           </Button>
-          <Button size="sm" variant="outline" asChild>
-            <a href={keySource.url} target="_blank" rel="noopener noreferrer">
-              {isEn ? "Get an API key" : isZh ? "获取 API 密钥" : "APIキーを取得"}
-              <ExternalLink className="h-3.5 w-3.5 ml-1.5" />
-            </a>
-          </Button>
         </div>
         <p className="text-[11px] text-muted-foreground max-w-md leading-relaxed">
           {isEn
-            ? "Your key is stored only on this device and is not sent to an AI Dict server. Provider usage fees may apply."
+            ? "Your key is stored only on this device. Search requests go directly from this device to your chosen provider, without passing through an AI Dict server. Usage fees and free tiers vary by provider."
             : isZh
-              ? "密钥仅保存在本设备，不会发送到 AI Dict 的服务器。服务商可能会收取使用费。"
-              : "キーはこの端末内だけに保存され、AI Dictのサーバーには送信されません。プロバイダーの利用料金がかかる場合があります。"}
+              ? "密钥仅保存在本设备。搜索请求由本设备直接发送给所选服务商，不经过 AI Dict 的服务器。使用费用和免费额度因服务商而异。"
+              : "キーはこの端末内だけに保存されます。検索時は端末から選択したプロバイダーへ直接接続し、AI Dictのサーバーは経由しません。利用料金や無料枠はプロバイダーによって異なります。"}
         </p>
       </div>
     );
@@ -202,10 +184,10 @@ function EmptyState({
         </p>
         <p className="text-xs text-muted-foreground mt-1">
           {isEn
-            ? "Type a word in the search field"
+            ? "Use the search bar below ↓"
             : isZh
-            ? "在搜索栏中输入词语"
-            : "検索欄にことばを入力してください"}
+            ? "使用下面的搜索栏 ↓"
+            : "下の検索バーから入力してください ↓"}
         </p>
       </div>
       <div className="flex flex-wrap gap-2 justify-center mt-1">
