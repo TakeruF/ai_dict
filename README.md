@@ -1,8 +1,8 @@
 # AI Dict
 
-AI Dict は、自分の AI プロバイダーの API キーを使って利用する、中国語・日本語学習向けの AI 辞書です。Web ブラウザと Android に対応し、辞書検索、例文生成、HSK 学習、クイズ、間隔反復（SRS）をひとつのアプリにまとめています。
+AI Dict は、自分の AI プロバイダーの API キーを使って利用する、中国語・日本語学習向けの AI 辞書です。現在は Web 版のみを運用しており、辞書検索、例文生成、HSK 学習、クイズ、間隔反復（SRS）をひとつのアプリにまとめています。
 
-[Web 版を使う](https://aidict.me) ・ [Android APK をダウンロード](https://github.com/TakeruF/ai_dict/releases/latest)
+[Web 版を使う](https://aidict.me)
 
 > 現在はベータ版です。AI の回答には誤りが含まれる可能性があり、各プロバイダーの利用料金と利用規約が適用されます。
 
@@ -11,8 +11,8 @@ AI Dict は、自分の AI プロバイダーの API キーを使って利用す
 | プラットフォーム | 状況 | 備考 |
 | --- | --- | --- |
 | Web | 開発中・利用可能 | Next.js の静的サイトとして動作 |
-| Android | ベータ版を配布中 | Android 7.0（API 24）以上、targetSdk 36 |
-| iOS | 開発中 | Capacitor / Xcode プロジェクトを同梱。一般配布は未実施 |
+| Android | 現在の運用対象外 | 旧 APK・リリース・ビルド設定は履歴として残存 |
+| iOS | 現在の運用対象外 | Capacitor / Xcode プロジェクトは残存。一般配布は未実施 |
 
 現在のアプリバージョンは `0.4.0` です。
 
@@ -42,9 +42,19 @@ AI Dict 自体はバックエンドサーバーやユーザーアカウントを
 
 API キー、設定、検索履歴、学習データは端末内に保存されます。辞書検索時には、検索語と API キーが選択した AI プロバイダーへ端末から直接送信されます。リポジトリの管理者がそれらを中継・保存することはありません。詳しくはアプリ内の[プライバシーポリシー](https://aidict.me/privacy/)を確認してください。
 
+## Google OAuth の運用（2026-10-21 確認）
+
+現行ソース・依存関係には Google ログインや Supabase Auth の実装がなく、Web 版はユーザーアカウントを必要としません。AI プロバイダーとしての Gemini の API キー利用と、Google ログイン用 OAuth クライアントは別です。
+
+Google Cloud の `aidict-489006` は現在「Hanlu」という表示名で、Hanlu 用の認証クライアントも含みます。旧 Web 用 `AiDict_web`（クライアント ID の末尾 `ojr825jn51ofh98cdm4i9mffhfbk271o.apps.googleusercontent.com`）には未使用警告がありました。現行 AiDict の実装には参照がないため、AiDict のために延命する対応は不要と判断しています。削除・設定変更は行っていません。本番配信物との一致は今回未検証です。
+
+- プロジェクト全体や Hanlu 用クライアントを、旧 AiDict のものと誤認して削除しないでください。
+- `SUPABASE_SETUP.md` は旧認証構成の参考資料です。現行 Web 版のセットアップには不要です。
+- 今後 Google ログインを再導入する場合は、当時の設定をそのまま流用せず、使用するクライアントと認証構成を改めて確認してください。
+
 ## 使い方
 
-1. [Web 版](https://aidict.me)を開くか、[GitHub Releases](https://github.com/TakeruF/ai_dict/releases)から Android APK をインストールします。
+1. [Web 版](https://aidict.me)を開きます。
 2. 初回画面で利用目的を選びます。
    - 日本語話者向け：中国語 → 日本語
    - English speakers：中国語 → 英語
@@ -117,7 +127,9 @@ ios/                   Capacitor iOS / Xcode プロジェクト
 .github/workflows/     CI と Android リリース自動化
 ```
 
-## Android リリース
+## Android リリース（旧運用の参考）
+
+現在は Web 版のみを運用しています。以下の手順・既存 APK は旧運用の記録であり、現在の配布案内ではありません。既存のリリース用ワークフローが残っているため、配布を再開する意図なくリリースタグを作成しないでください。
 
 `v*` タグを push すると、GitHub Actions が APK をビルドし、署名を検証して SHA-256 チェックサムとともに GitHub Releases へ公開します。
 

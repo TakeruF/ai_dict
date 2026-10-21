@@ -1,3 +1,6 @@
+> **旧認証構成の参考資料（2026-10-21）**
+> 現行 AiDict は Web 版のみを運用し、ソース・依存関係にはユーザーアカウント、Supabase Auth、Google ログインの実装がありません。この手順は現行版のセットアップには不要です。旧 `AiDict_web` OAuth クライアントの未使用通知への判断は [README](README.md#google-oauth-の運用2026-10-21-確認) を参照してください。
+
 # Supabase セットアップガイド
 
 AI Dict に認証機能（Google / メール）と管理者ページを追加するための Supabase 設定手順です。
